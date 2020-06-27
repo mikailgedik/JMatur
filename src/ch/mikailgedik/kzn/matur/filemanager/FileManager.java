@@ -5,10 +5,17 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 
 public class FileManager {
-    public FileManager() {
+    public static final String DEFAULT_SETTINGS = "/settings/defaultsettings";
+
+    public static final FileManager FILE_MANAGER;
+
+    static {
+        FILE_MANAGER = new FileManager();
+    }
+
+    private FileManager() {
     }
 
     public void saveImage(String name, BufferedImage image) {
@@ -21,5 +28,9 @@ public class FileManager {
 
     public InputStream getResourceAsStream(String name) {
         return FileManager.class.getResourceAsStream(name);
+    }
+
+    public static FileManager getFileManager() {
+        return FILE_MANAGER;
     }
 }

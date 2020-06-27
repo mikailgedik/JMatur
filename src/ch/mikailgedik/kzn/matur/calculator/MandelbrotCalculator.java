@@ -10,16 +10,19 @@ public class MandelbrotCalculator {
     }
 
     public CalculationResult<CalculationResult.DataMandelbrot> calculate() {
-        SettingsManager.SettingViewport vp =
-                (SettingsManager.SettingViewport) sm.get(SettingsManager.SettingViewport.IDENTIFIER);
-        SettingsManager.SettingNumber num =
-                (SettingsManager.SettingNumber) sm.get(SettingsManager.SettingNumber.IDENTIFIER);
+        double minx = sm.getD(SettingsManager.CALCULATION_MINX);
+        double maxx = sm.getD(SettingsManager.CALCULATION_MAXX);
+        double miny = sm.getD(SettingsManager.CALCULATION_MINY);
+        double maxy = sm.getD(SettingsManager.CALCULATION_MAXY);
 
-        CalculationResult<CalculationResult.DataMandelbrot> res = new CalculationResult<>(vp.getxCo(), vp.getyCo(),
-                (int) Math.ceil((vp.getxCo()[1] - vp.getxCo()[0]) * (vp.getyCo()[1] - vp.getyCo()[0])));
+        double xSampleSize = (maxx - minx) / (sm.getI(SettingsManager.CALCULATION_TICKX) + 1);
+        double ySampleSize = (maxy - miny) / (sm.getI(SettingsManager.CALCULATION_TICKY) + 1);
+
+        CalculationResult<CalculationResult.DataMandelbrot> res = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy},
+                (int) Math.ceil((maxx - minx) * (maxy- miny)));
         
-        for(double x = vp.getxCo()[0]; x < vp.getxCo()[1]; x += num.getSampleSizeX()) {
-            for(double y = vp.getyCo()[0]; y < vp.getyCo()[1]; y += num.getSampleSizeY()) {
+        for(double x = minx; x < maxx; x += xSampleSize) {
+            for(double y = miny; y < maxy; y += ySampleSize) {
                 res.add(new CalculationResult.DataMandelbrot(x, y, calc(x,y)));
             }
         }
@@ -28,7 +31,7 @@ public class MandelbrotCalculator {
 
     private boolean calc(double x, double y) {
         double a = 0, b = 0, ta, tb;
-        int maxIterations = ((SettingsManager.SettingNumber) sm.get(SettingsManager.SettingNumber.IDENTIFIER)).getMaxIterations();
+        int maxIterations = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
         for(int i = 0; i < maxIterations; ++i) {
             ta = a*a - b*b + x;
             tb = 2 * a * b + y;

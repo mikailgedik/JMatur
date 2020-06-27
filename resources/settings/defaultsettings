@@ -1,0 +1,21 @@
+###RENDER SETTINGS
+
+#render range
+double.setting.render.minX=-2
+double.setting.render.maxX=2
+double.setting.render.minY=-2
+double.setting.render.maxY=2
+#Height and Width of image
+int.setting.render.imageWidth=100
+int.setting.render.imageHeight=100
+#------------------------------------------------
+#CALCUTION SETTINGS
+double.setting.calculation.minX=-2
+double.setting.calculation.maxX=2
+double.setting.calculation.minY=-2
+double.setting.calculation.maxY=2
+#Amount of calculation points
+int.setting.calculation.tickX=100
+int.setting.calculation.tickY=100
+#Max iterations per render point
+int.setting.calculation.maxIterations=1000

@@ -7,14 +7,17 @@ import ch.mikailgedik.kzn.matur.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.settings.SettingsManager;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
+import java.util.Scanner;
 
 public class TestMain {
-    public static final String VERSION = "Java 0.0.1";
+    public static final String VERSION = "Java 0.0.2";
 
     private static final String OUTPUT_FILE = "/home/mikail/Desktop/File.png";
 
-    public static void main(String[] args) {
+    public static void test() {
         System.out.println("Version: " + VERSION);
         DecimalFormat format = new DecimalFormat("00000");
         long t = System.currentTimeMillis();
@@ -27,15 +30,19 @@ public class TestMain {
         t = System.currentTimeMillis();
 
         ImageCreator imageCreator = new ImageCreator();
-        BufferedImage image = imageCreator.createImage(data, 50, 50, man);
+        BufferedImage image = imageCreator.createImage(data, man);
 
         System.out.println("Time to calculate image:   " + format.format((System.currentTimeMillis()-t)) + " ms");
         t = System.currentTimeMillis();
 
-        FileManager manager = new FileManager();
+        FileManager manager = FileManager.getFileManager();
         manager.saveImage(OUTPUT_FILE, image);
         System.out.println("Saved image to: " + OUTPUT_FILE);
         System.out.println("Time to save image:        " + format.format((System.currentTimeMillis()-t)) + " ms");
         //t = System.currentTimeMillis();
+    }
+
+    public static void main(String[] args) {
+        test();
     }
 }
