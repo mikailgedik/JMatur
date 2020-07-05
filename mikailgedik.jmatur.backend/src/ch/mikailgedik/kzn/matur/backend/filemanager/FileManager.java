@@ -1,4 +1,4 @@
-package ch.mikailgedik.kzn.matur.filemanager;
+package ch.mikailgedik.kzn.matur.backend.filemanager;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

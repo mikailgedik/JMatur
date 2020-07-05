@@ -1,27 +1,14 @@
-package ch.mikailgedik.kzn.matur.settings;
+package ch.mikailgedik.kzn.matur.backend.settings;
 
-import ch.mikailgedik.kzn.matur.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.connector.Constants;
+import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 
 import java.io.*;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SettingsManager {
-    public static final String RENDER_MINX = "double.setting.render.minX";
-    public static final String RENDER_MAXX = "double.setting.render.maxX";
-    public static final String RENDER_MINY = "double.setting.render.minY";
-    public static final String RENDER_MAXY = "double.setting.render.maxY";
-    public static final String RENDER_IMAGE_WIDTH = "int.setting.render.imageWidth";
-    public static final String RENDER_IMAGE_HEIGHT = "int.setting.render.imageHeight";
-
-    public static final String CALCULATION_MINX = "double.setting.calculation.minX";
-    public static final String CALCULATION_MAXX = "double.setting.calculation.maxX";
-    public static final String CALCULATION_MINY = "double.setting.calculation.minY";
-    public static final String CALCULATION_MAXY = "double.setting.calculation.maxY";
-    public static final String CALCULATION_TICKX = "int.setting.calculation.tickX";
-    public static final String CALCULATION_TICKY = "int.setting.calculation.tickY";
-    public static final String CALCULATION_MAX_ITERATIONS = "int.setting.calculation.maxIterations";
+public class SettingsManager implements Constants {
 
     private final TreeMap<String, Object> settings;
     private SettingsManager() {
@@ -90,16 +77,15 @@ public class SettingsManager {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot get resource \"" + FileManager.DEFAULT_SETTINGS + "\": Exception on reading");
+            throw new RuntimeException("Cannot get resource \"" + FileManager.DEFAULT_SETTINGS + "\": Exception on reading", e);
         } finally {
             try {
                 if(reader != null) {
                     reader.close();
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Cannot get resource \"" + FileManager.DEFAULT_SETTINGS + "\": Exception closing stream");
+                throw new RuntimeException("Cannot get resource \"" + FileManager.DEFAULT_SETTINGS + "\": Exception closing stream", e);
             }
-
         }
     }
 

@@ -1,4 +1,4 @@
-package ch.mikailgedik.kzn.matur.calculator;
+package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import java.util.ArrayList;
 import java.util.Iterator;

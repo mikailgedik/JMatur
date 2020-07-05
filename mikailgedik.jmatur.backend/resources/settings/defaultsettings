@@ -1,5 +1,12 @@
+###CONSTANT VALUES
+#These value are not meant to change during computation (e. g. things like software version)
+string.value.version=Java 0.0.3
+#------------------------------------------------
+###FILE SETTINGS
+#default file when exporting image
+string.file.defaultOutputFile=
+#------------------------------------------------
 ###RENDER SETTINGS
-
 #render range
 double.setting.render.minX=-2
 double.setting.render.maxX=2

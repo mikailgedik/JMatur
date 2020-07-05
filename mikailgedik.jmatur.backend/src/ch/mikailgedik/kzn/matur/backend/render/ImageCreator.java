@@ -1,25 +1,27 @@
-package ch.mikailgedik.kzn.matur.render;
+package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.calculator.CalculationResult;
-import ch.mikailgedik.kzn.matur.settings.SettingsManager;
+import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
+import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
 public class ImageCreator {
-    public ImageCreator() {
+    private SettingsManager settingsManager;
+    public ImageCreator(SettingsManager settingsManager) {
+        this.settingsManager = settingsManager;
         //TODO
     }
 
-    public BufferedImage createImage(CalculationResult<CalculationResult.DataMandelbrot> data, SettingsManager sm) {
-        int width = sm.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = sm.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
+    public BufferedImage createImage(CalculationResult<CalculationResult.DataMandelbrot> data) {
+        int width = settingsManager.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = settingsManager.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         int[] content = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
 
-        double minx = sm.getD(SettingsManager.RENDER_MINX);
-        double maxx = sm.getD(SettingsManager.RENDER_MAXX);
-        double miny = sm.getD(SettingsManager.RENDER_MINY);
-        double maxy = sm.getD(SettingsManager.RENDER_MAXY);
+        double minx = settingsManager.getD(SettingsManager.RENDER_MINX);
+        double maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);
+        double miny = settingsManager.getD(SettingsManager.RENDER_MINY);
+        double maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
 
         for(int x = 0; x < width; x++) {
             for(int y = 0; y < height; y++) {

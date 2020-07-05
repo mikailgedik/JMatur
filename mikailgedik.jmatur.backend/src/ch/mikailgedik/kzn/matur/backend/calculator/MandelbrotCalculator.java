@@ -1,6 +1,6 @@
-package ch.mikailgedik.kzn.matur.calculator;
+package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.settings.SettingsManager;
+import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 public class MandelbrotCalculator {
     private SettingsManager sm;
