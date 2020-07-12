@@ -28,6 +28,10 @@ public class CalculationResult<T> implements Iterable<T>{
         return data.size();
     }
 
+    public void addOtherResult(CalculationResult<T> other) {
+        this.data.addAll(other.data);
+    }
+
     @Override
     public Iterator<T> iterator() {
         return data.iterator();

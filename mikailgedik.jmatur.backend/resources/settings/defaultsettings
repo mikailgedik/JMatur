@@ -26,3 +26,7 @@ int.setting.calculation.tickX=100
 int.setting.calculation.tickY=100
 #Max iterations per render point
 int.setting.calculation.maxIterations=1000
+#Max CPU threads
+int.setting.calculation.maxThreads=23
+#Max time given to each thread to calculate (0 for infinity)
+int.setting.calculation.maxWaitingTimeForThread=0

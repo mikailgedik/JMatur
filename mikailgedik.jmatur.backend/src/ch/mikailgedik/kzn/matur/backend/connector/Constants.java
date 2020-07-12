@@ -19,4 +19,6 @@ public interface Constants {
     String CALCULATION_TICKX = "int.setting.calculation.tickX";
     String CALCULATION_TICKY = "int.setting.calculation.tickY";
     String CALCULATION_MAX_ITERATIONS = "int.setting.calculation.maxIterations";
+    String CALCULATION_MAX_THREADS = "int.setting.calculation.maxThreads";
+    String CALCULATION_MAX_WAITING_TIME_THREADS = "int.setting.calculation.maxWaitingTimeForThread";
 }
