@@ -1,34 +1,77 @@
 package ch.mikailgedik.kzn.matur.frontend.window;
 
 import ch.mikailgedik.kzn.matur.backend.connector.Connector;
+import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.image.BufferedImage;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class WindowFrontEnd extends JFrame {
     private FractalCanvas canvas;
+    private JTextArea textPanel;
+    private JScrollPane scrollPane;
+
+    private JSplitPane splitPane;
+
     private final Connector connector;
+    private Point mousePoint;
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
         connector = new Connector();
         init();
 
-        refresh();
+        splitPane.setDividerLocation(0.8);
 
-        this.addComponentListener(new ComponentAdapter() {
+        MouseAdapter adapter = new MouseAdapter() {
             @Override
-            public void componentResized(ComponentEvent e) {
-                Component c = e.getComponent();
-                canvas.repaint();
-                canvas.revalidate();
+            public void mousePressed(MouseEvent e) {
+                mousePoint = e.getPoint();
             }
-        });
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if(mousePoint != null) {
+                    //Reverse y-Axis
+                    moveViewportByPixel(mousePoint.x - e.getX(),  e.getY() - mousePoint.y);
+                    mousePoint = e.getPoint();
+                }
+            }
+        };
+
+        canvas.addMouseListener(adapter);
+
+        canvas.addMouseMotionListener(adapter);
+
+        refresh();
+    }
+
+    private void moveViewportByPixel(int pdx, int pdy) {
+        double minX = connector.getSettingD(Constants.RENDER_MINX);
+        double maxX = connector.getSettingD(Constants.RENDER_MAXX);
+        double minY = connector.getSettingD(Constants.RENDER_MINY);
+        double maxY = connector.getSettingD(Constants.RENDER_MAXY);
+
+        double dx, dy;
+
+        dx = pdx / (1.0 * (maxX - minX) * canvas.getWidth());
+        dy = pdy / (1.0 * (maxY - minY) * canvas.getHeight());
+
+        connector.setSetting(Constants.RENDER_MINX, minX + dx);
+        connector.setSetting(Constants.RENDER_MAXX, maxX + dx);
+        connector.setSetting(Constants.RENDER_MINY, minY + dy);
+        connector.setSetting(Constants.RENDER_MAXY, maxY + dy);
+
+        connector.createImage();
+        canvas.setScreen(connector.getImage());
     }
 
     private void init() {
@@ -36,7 +79,7 @@ public class WindowFrontEnd extends JFrame {
         createLayout();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(new Dimension(200,150));
+        setSize(new Dimension(400,300));
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -44,6 +87,16 @@ public class WindowFrontEnd extends JFrame {
     private void createComponents() {
         canvas = new FractalCanvas();
 
+        textPanel = new JTextArea();
+        textPanel.setText("OUTPUT\n");
+        textPanel.setForeground(Color.WHITE);
+        textPanel.setBackground(Color.BLACK);
+        textPanel.setEditable(false);
+        scrollPane = new JScrollPane(textPanel);
+
+        splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.add(canvas);
+        splitPane.add(scrollPane);
         createMenu();
     }
 
@@ -53,9 +106,6 @@ public class WindowFrontEnd extends JFrame {
         Screen image = connector.getImage();
 
         canvas.setScreen(image);
-
-        this.validate();
-        this.repaint();
     }
 
     private void createMenu() {
@@ -63,48 +113,154 @@ public class WindowFrontEnd extends JFrame {
         {
             //File
             JMenu menuFile = new JMenu("File");
-            menuFile.add(new JMenuItem("Open"));
-            menuFile.add(new JMenuItem("Close"));
-            menuFile.add(new JMenuItem("Save"));
+
+            JMenuItem open = new JMenuItem("Open");
+            open.addActionListener(this::fileOpen);
+            menuFile.add(open);
+
+            JMenuItem close = new JMenuItem("Close");
+            close.addActionListener(this::fileClose);
+            menuFile.add(close);
+
+            JMenuItem save = new JMenuItem("Save");
+            save.addActionListener(this::fileSave);
+            menuFile.add(save);
             menuBar.add(menuFile);
         }
         {
             //Fractal
             JMenu menuFractal = new JMenu("Fractal");
-            menuFractal.add(new JMenuItem("Select Fractal"));
-            menuFractal.add(new JMenuItem("Set viewport"));
+
+
+            JMenuItem selectFrac = new JMenuItem("Select Fractal");
+            selectFrac.addActionListener(this::selectFractal);
+            menuFractal.add(selectFrac);
+
+            JMenuItem setViewport = new JMenuItem("Set viewport");
+            selectFrac.addActionListener(this::setViewport);
+            menuFractal.add(setViewport);
+
             menuBar.add(menuFractal);
         }
         {
             //Settings
             JMenu menuSetting = new JMenu("Settings");
-            menuSetting.add(new JMenuItem("Open settings"));
+
+            JMenuItem openSettings = new JMenuItem("Open settings");
+            openSettings.addActionListener(this::openSettings);
+
+            menuSetting.add(openSettings);
+
             menuBar.add(menuSetting);
         }
 
         setJMenuBar(menuBar);
     }
 
+    private void openSettings(ActionEvent actionEvent) {
+        JDialog dialog = new JDialog(this, true);
+
+        JPanel panel = new JPanel();
+        GroupLayout layout = new GroupLayout(panel);
+
+        GroupLayout.Group ver = layout.createSequentialGroup();
+        GroupLayout.Group hor =  layout.createParallelGroup();
+
+        TreeMap<String, Object> map = connector.getAllSettings();
+        TreeMap<String, Object[]> tree = new TreeMap<>();
+
+        for(Map.Entry<String, Object> entry: map.entrySet()) {
+            JTextField key = new JTextField(entry.getKey());
+            key.setEditable(false);
+            JTextField value = new JTextField(entry.getValue().toString());
+            if(entry.getKey().startsWith("value")) {
+                value.setEditable(false);
+            }
+            tree.put(entry.getKey(), new Object[]{value, entry.getValue()});
+            hor.addGroup(layout.createSequentialGroup().addComponent(key).addComponent(value));
+            ver.addGroup(layout.createParallelGroup().addComponent(key).addComponent(value));
+        }
+
+        JButton closeWithoutSave = new JButton("Exit without saving");
+        closeWithoutSave.addActionListener(e -> dialog.dispose());
+
+        JButton closeWithSave = new JButton("Exit and save");
+        closeWithSave.addActionListener(e -> {
+            tree.forEach((k, v) -> {
+                String newString = ((JTextField)v[0]).getText();
+                if(!v[1].toString().equals(newString)) {
+                    log("New setting for " + k);
+
+                    Object newObj = switch (k.substring(0, k.indexOf('.'))) {
+                        case "int" -> Integer.valueOf(newString);
+                        case "double" ->  Double.valueOf(newString);
+                        case "string" -> newString;
+                        default -> throw new RuntimeException("Unsupported type");
+                    };
+
+                    connector.setSetting(k, newObj);
+                }
+            });
+
+            dialog.dispose();
+        });
+
+        hor.addGroup(layout.createSequentialGroup().addComponent(closeWithoutSave).addComponent(closeWithSave));
+        ver.addGroup(layout.createParallelGroup().addComponent(closeWithoutSave).addComponent(closeWithSave));
+
+        layout.setHorizontalGroup(hor);
+        layout.setVerticalGroup(ver);
+
+        panel.setLayout(layout);
+
+        JScrollPane scrollPane = new JScrollPane(panel);
+        dialog.add(scrollPane);
+        dialog.setSize(new Dimension(400, 300));
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private void setViewport(ActionEvent actionEvent) {
+        assert false;
+    }
+
+    private void selectFractal(ActionEvent actionEvent) {
+        assert false;
+    }
+
+    private void fileClose(ActionEvent actionEvent) {
+        System.exit(0);
+        assert false;
+    }
+
+    private void fileOpen(ActionEvent actionEvent) {
+        assert false;
+    }
+
+    private void fileSave(ActionEvent actionEvent) {
+        JFileChooser chooser = new JFileChooser();
+        int option = chooser.showOpenDialog(this);
+        if(option == JFileChooser.APPROVE_OPTION) {
+            String file = chooser.getSelectedFile().getAbsolutePath();
+            connector.saveImage(file);
+            System.out.println("File saved to " + file);
+        }
+    }
+
+    public void log(String message) {
+        textPanel.append(message + "\n");
+    }
+
     private void createLayout() {
         //https://docs.oracle.com/javase/tutorial/uiswing/layout/group.html
 
-        GroupLayout layout = new GroupLayout(this.getContentPane());
-        //Horizontal
-        {
-            GroupLayout.Group hor = layout.createSequentialGroup();
-            hor.addComponent(canvas,0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE);
-            layout.setHorizontalGroup(hor);
+        BorderLayout layout = new BorderLayout();
 
-        }
-        //Vertical
-        {
-            GroupLayout.Group ver = layout.createParallelGroup();
-            ver.addComponent(canvas, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE);
-            layout.setVerticalGroup(ver);
-        }
+        layout.addLayoutComponent(splitPane, BorderLayout.CENTER);
+
+        this.getContentPane().add(splitPane);
         this.setLayout(layout);
     }
-
 
     public static void main(String[] args) throws InvocationTargetException, InterruptedException {
         SwingUtilities.invokeAndWait(WindowFrontEnd::new);

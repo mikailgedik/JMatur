@@ -3,13 +3,12 @@ package ch.mikailgedik.kzn.matur.frontend.window;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.connector.ScreenScaler;
 
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
-public class FractalCanvas extends Canvas {
+public class FractalCanvas extends JComponent {
     private Screen screen;
     private ScreenScaler scaler;
 
@@ -43,5 +42,7 @@ public class FractalCanvas extends Canvas {
     public void setScreen(Screen screen) {
         this.screen = screen;
         this.scaler = null;
+
+        repaint();
     }
 }

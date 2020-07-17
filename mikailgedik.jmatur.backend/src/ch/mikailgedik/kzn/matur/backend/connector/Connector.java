@@ -7,6 +7,7 @@ import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.awt.image.BufferedImage;
+import java.util.TreeMap;
 
 /** This class connects the frontend with the backend */
 public class Connector {
@@ -63,5 +64,7 @@ public class Connector {
         FileManager.getFileManager().saveImage(path, image);
     }
 
-
+    public TreeMap<String, Object> getAllSettings() {
+        return settingsManager.getAllSettings();
+    }
 }

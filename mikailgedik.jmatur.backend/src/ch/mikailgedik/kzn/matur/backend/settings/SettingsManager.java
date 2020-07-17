@@ -115,4 +115,8 @@ public class SettingsManager implements Constants {
     public String getS(String name) {
         return (String) settings.get(name);
     }
+
+    public TreeMap<String, Object> getAllSettings() {
+        return settings;
+    }
 }
