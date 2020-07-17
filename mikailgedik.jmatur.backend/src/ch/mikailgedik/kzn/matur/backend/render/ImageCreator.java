@@ -1,10 +1,8 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
+import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
-
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 
 public class ImageCreator {
     private SettingsManager settingsManager;
@@ -13,10 +11,10 @@ public class ImageCreator {
         //TODO
     }
 
-    public BufferedImage createImage(CalculationResult<CalculationResult.DataMandelbrot> data) {
+    public Screen createImage(CalculationResult<CalculationResult.DataMandelbrot> data) {
         int width = settingsManager.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = settingsManager.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        int[] content = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
+        Screen image = new Screen(width, height);
+        int[] content = image.getPixels();
 
         double minx = settingsManager.getD(SettingsManager.RENDER_MINX);
         double maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);

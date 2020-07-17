@@ -1,5 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.filemanager;
 
+import ch.mikailgedik.kzn.matur.backend.connector.Screen;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -18,9 +20,9 @@ public class FileManager {
     private FileManager() {
     }
 
-    public void saveImage(String name, BufferedImage image) {
+    public void saveImage(String name, Screen image) {
         try {
-            ImageIO.write(image, "png", new File(name));
+            ImageIO.write(image.toBufferedImage(), "png", new File(name));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

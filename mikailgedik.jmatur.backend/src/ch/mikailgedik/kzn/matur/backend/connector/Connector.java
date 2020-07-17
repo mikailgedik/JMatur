@@ -14,7 +14,7 @@ public class Connector {
     private final MandelbrotCalculator calculator;
     private CalculationResult<CalculationResult.DataMandelbrot> calculationResult;
     private final ImageCreator imageCreator;
-    private BufferedImage image;
+    private Screen image;
 
     public Connector() {
         calculationResult = null;
@@ -53,7 +53,7 @@ public class Connector {
         image = imageCreator.createImage(calculationResult);
     }
 
-    public BufferedImage getImage() {
+    public Screen getImage() {
         return image;
     }
 
