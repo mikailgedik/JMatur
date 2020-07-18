@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -16,13 +17,14 @@ import java.util.TreeMap;
 
 public class WindowFrontEnd extends JFrame {
     private FractalCanvas canvas;
+    private Point mousePoint;
+
     private JTextArea textPanel;
     private JScrollPane scrollPane;
-
     private JSplitPane splitPane;
+    private JButton refreshButton;
 
     private final Connector connector;
-    private Point mousePoint;
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
@@ -45,13 +47,47 @@ public class WindowFrontEnd extends JFrame {
                     mousePoint = e.getPoint();
                 }
             }
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                double zoom = Math.exp(e.getPreciseWheelRotation()/4);
+                log("" + zoom);
+                zoomIntoByFactor(zoom);
+            }
         };
 
         canvas.addMouseListener(adapter);
 
         canvas.addMouseMotionListener(adapter);
 
+        canvas.addMouseWheelListener(adapter);
         refresh();
+    }
+
+    private void zoomIntoByFactor(double factor) {
+        double minX = connector.getSettingD(Constants.RENDER_MINX);
+        double maxX = connector.getSettingD(Constants.RENDER_MAXX);
+        double minY = connector.getSettingD(Constants.RENDER_MINY);
+        double maxY = connector.getSettingD(Constants.RENDER_MAXY);
+
+        double xd = maxX - minX;
+        double yd = maxY - minY;
+
+        xd *= (factor - 1);
+        yd *= (factor - 1);
+        minX -= xd;
+        maxX += xd;
+
+        minY -= yd;
+        maxY += yd;
+
+        connector.setSetting(Constants.RENDER_MINX, minX);
+        connector.setSetting(Constants.RENDER_MAXX, maxX);
+        connector.setSetting(Constants.RENDER_MINY, minY);
+        connector.setSetting(Constants.RENDER_MAXY, maxY);
+
+        connector.createImage();
+        canvas.setScreen(connector.getImage());
     }
 
     private void moveViewportByPixel(int pdx, int pdy) {
@@ -97,6 +133,9 @@ public class WindowFrontEnd extends JFrame {
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.add(canvas);
         splitPane.add(scrollPane);
+
+        this.refreshButton = new JButton("Refresh");
+        this.refreshButton.addActionListener(e -> this.refresh());
         createMenu();
     }
 
@@ -257,8 +296,9 @@ public class WindowFrontEnd extends JFrame {
         BorderLayout layout = new BorderLayout();
 
         layout.addLayoutComponent(splitPane, BorderLayout.CENTER);
-
+        layout.addLayoutComponent(refreshButton, BorderLayout.SOUTH);
         this.getContentPane().add(splitPane);
+        this.getContentPane().add(refreshButton);
         this.setLayout(layout);
     }
 
