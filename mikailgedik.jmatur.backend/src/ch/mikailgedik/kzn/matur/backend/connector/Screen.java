@@ -108,6 +108,10 @@ public class Screen {
         Screen screen = new Screen(width, height);
         for (int y = 0; y < height; y++) {
             int yOnThis = y + yPoint;
+            if(yOnThis < 0) {
+                //TODO optimize
+                continue;
+            }
             if (yOnThis >= this.height) {
                 return screen;
             }
@@ -115,7 +119,12 @@ public class Screen {
                 int xOnThis = x + xPoint;
                 if (xOnThis >= this.width)
                     continue;
-                screen.getPixels()[x + y * width] = getPixels()[xOnThis + yOnThis * this.width];
+                if(xOnThis < 0) {
+                    //TODO optimize
+                    continue;
+                }
+                screen.getPixels()[x + y * width] =
+                        getPixels()[xOnThis + yOnThis * this.width];
             }
         }
         return screen;
