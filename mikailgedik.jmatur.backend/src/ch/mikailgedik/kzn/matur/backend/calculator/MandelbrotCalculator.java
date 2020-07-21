@@ -2,88 +2,83 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
+import java.util.Stack;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 public class MandelbrotCalculator {
     private SettingsManager sm;
+    private CalculationResult<CalculationResult.DataMandelbrot> result;
+    private ExecutorService executorService;
 
+    private int maxIter;
+    double xSampleSize, ySampleSize;
     public MandelbrotCalculator(SettingsManager settingsManager) {
         this.sm = settingsManager;
     }
 
     public CalculationResult<CalculationResult.DataMandelbrot> calculate() {
         long t = System.currentTimeMillis();
-        ThreadCalculator[] threads = new ThreadCalculator[sm.getI(SettingsManager.CALCULATION_MAX_THREADS)];
+        executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
-        int maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
+        maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
         double minx = sm.getD(SettingsManager.CALCULATION_MINX);
         double maxx = sm.getD(SettingsManager.CALCULATION_MAXX);
         double miny = sm.getD(SettingsManager.CALCULATION_MINY);
         double maxy = sm.getD(SettingsManager.CALCULATION_MAXY);
 
-        double xSampleSize = (maxx - minx) / (sm.getI(SettingsManager.CALCULATION_TICKX) + 1);
-        double ySampleSize = (maxy - miny) / (sm.getI(SettingsManager.CALCULATION_TICKY) + 1);
+        result = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy},
+                (int) Math.ceil((maxx - minx) * (maxy - miny)));
 
-        double yFrac = (maxy - miny) / (threads.length);
+        xSampleSize = (maxx - minx) / (sm.getI(SettingsManager.CALCULATION_TICKX) + 1);
+        ySampleSize = (maxy - miny) / (sm.getI(SettingsManager.CALCULATION_TICKY) + 1);
 
-        for(int i = 0; i < threads.length; i++) {
-            threads[i] = new ThreadCalculator(minx,miny + i * yFrac ,xSampleSize,ySampleSize, maxx,miny + yFrac * (1 + i), maxIter);
-            threads[i].start();
-        }
-
-        System.out.println(System.currentTimeMillis() - t);
+        System.out.println("Init time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
 
-        CalculationResult<CalculationResult.DataMandelbrot> res = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy},
-                (int) Math.ceil((maxx - minx) * (maxy- miny)));
+        for (CalculationResult.Cluster<CalculationResult.DataMandelbrot> c: result) {
+            executorService.submit(new ThreadCalculator(c));
+        }
 
+        executorService.shutdown();
         try {
-            for (ThreadCalculator thread : threads) {
-                thread.join(maxWaitTime);
+            if(!executorService.awaitTermination(maxWaitTime, TimeUnit.MILLISECONDS)) {
+                throw new RuntimeException("Threadpool exceeded max wait time (" + maxWaitTime + "ms)");
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException("This thread should not be interrupted", e);
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
         }
 
-        System.out.println(System.currentTimeMillis() - t);
+        System.out.println("Calc time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
-
-        for (ThreadCalculator thread : threads) {
-            res.addOtherResult(thread.getResult());
-        }
-
-        System.out.println(System.currentTimeMillis() - t);
-        t = System.currentTimeMillis();
-        return res;
+        return result;
     }
 
-    private static class ThreadCalculator extends Thread {
-        private double xstart, ystart, xstep, ystep, xend, yend;
-        private CalculationResult<CalculationResult.DataMandelbrot> result;
-        private int maxIterations;
-
-        public ThreadCalculator(double xstart, double ystart, double xstep, double ystep, double xend, double yend, int maxIterations) {
-            this.xstart = xstart;
-            this.ystart = ystart;
-            this.xstep = xstep;
-            this.ystep = ystep;
-            this.xend = xend;
-            this.yend = yend;
-            this.maxIterations = maxIterations;
-            result = new CalculationResult<>(new double[]{xstart, xend}, new double[]{ystart, yend},
-                    (int) Math.ceil((xend - xstart) * (yend- ystart)));
+    private class ThreadCalculator implements Runnable {
+        private CalculationResult.Cluster<CalculationResult.DataMandelbrot> cluster;
+        private long calctime;
+        public ThreadCalculator(CalculationResult.Cluster<CalculationResult.DataMandelbrot> cluster) {
+            this.cluster = cluster;
+            this.calctime = -1;
         }
 
         @Override
         public void run() {
-            for(double x = xstart; x < xend; x += xstep) {
-                for(double y = ystart; y < yend; y += ystep) {
-                    result.add(new CalculationResult.DataMandelbrot(x, y, calc(x,y)));
+            long t = System.currentTimeMillis();
+            for(double x = cluster.getXstart(); x < cluster.getXend(); x += xSampleSize) {
+                for(double y = cluster.getYstart(); y < cluster.getYend(); y += ySampleSize) {
+                    cluster.add(new CalculationResult.DataMandelbrot(x, y, calc(x,y)));
                 }
             }
+            calctime = (System.currentTimeMillis() - t);
         }
 
         private boolean calc(double x, double y) {
             double a = 0, b = 0, ta, tb;
-            for(int i = 0; i < maxIterations; ++i) {
+            for(int i = 0; i < maxIter; ++i) {
                 ta = a*a - b*b + x;
                 tb = 2 * a * b + y;
                 a = ta;
@@ -93,10 +88,6 @@ public class MandelbrotCalculator {
                 }
             }
             return true;
-        }
-
-        public CalculationResult<CalculationResult.DataMandelbrot> getResult() {
-            return result;
         }
     }
 

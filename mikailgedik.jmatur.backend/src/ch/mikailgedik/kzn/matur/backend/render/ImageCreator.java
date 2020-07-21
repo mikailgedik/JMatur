@@ -25,11 +25,14 @@ public class ImageCreator {
             for(int y = 0; y < height; y++) {
                 double[] loc = {minx + (maxx - minx) * (1.0 * (x + .5) / width),
                         miny + (maxy - miny) * (1.0 * (y + .5) / height)};
-                CalculationResult.DataMandelbrot d = data.get(0);
+
+                CalculationResult.Cluster<CalculationResult.DataMandelbrot> chunk = data.getCluster(loc[0], loc[1]);
+
+                CalculationResult.DataMandelbrot d = chunk.get(0);
 
                 double dist = (d.getX() - loc[0]) * (d.getX() - loc[0]) + (d.getY() - loc[1]) * (d.getY() - loc[1]);
                 double tmpd;
-                for(CalculationResult.DataMandelbrot tmp: data) {
+                for(CalculationResult.DataMandelbrot tmp: chunk) {
                     tmpd = (tmp.getX() - loc[0]) * (tmp.getX() - loc[0]) + (tmp.getY() - loc[1]) * (tmp.getY() - loc[1]);
                     if(dist > tmpd) {
                         dist = tmpd;
