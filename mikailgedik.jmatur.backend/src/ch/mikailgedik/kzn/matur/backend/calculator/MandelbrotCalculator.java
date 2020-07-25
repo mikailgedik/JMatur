@@ -1,10 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.backend.connector.Screen;
-import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +14,7 @@ public class MandelbrotCalculator {
 
     private int maxIter;
 
-    private int maxDepth = 2;
+    private int maxDepth;
 
     private AtomicInteger threadCounter;
 
@@ -105,8 +102,6 @@ public class MandelbrotCalculator {
                     double[] co = cluster.getCenterCoordinates(i);
                     cluster.setValue(i, new CalculationResult.DataMandelbrot(co[0], co[1], calc(co[0], co[1])));
                 }
-
-                //cluster.checkUniformity();
 
                 calctime = (System.currentTimeMillis() - t);
             } catch (RuntimeException e) {

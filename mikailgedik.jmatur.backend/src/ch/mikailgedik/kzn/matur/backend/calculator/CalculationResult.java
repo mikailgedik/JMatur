@@ -1,10 +1,10 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
 public class CalculationResult<T extends Cluster.Result> {
-    private Cluster<T> firstCluster;
+    private final Cluster<T> firstCluster;
 
     public CalculationResult(double[] xBounds, double[] yBounds, int tiles) {
-        firstCluster = new Cluster<>(xBounds[0], yBounds[0], Math.max(xBounds[1] - xBounds[0], yBounds[1]- yBounds[0]), 0, tiles);
+        firstCluster = new Cluster<>(xBounds[0], yBounds[0], xBounds[1] - xBounds[0], yBounds[1]- yBounds[0], 0, tiles);
     }
 
     public Cluster<T> getCluster() {

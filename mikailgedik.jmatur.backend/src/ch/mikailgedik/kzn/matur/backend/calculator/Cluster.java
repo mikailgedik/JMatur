@@ -10,17 +10,19 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
     private Cluster<T>[] subClusters;
     private T[] values;
 
-    private final double startx, starty, size;
+    private final double startx, starty, width, height;
     private final int depth;
     private final int tiles;
 
     private T uniValue;
 
     @SuppressWarnings("unchecked")
-    public Cluster(double startx, double starty, double size, int depth, int tiles) {
+    public Cluster(double startx, double starty, double width, double height, int depth, int tiles) {
         this.startx = startx;
         this.starty = starty;
-        this.size = size;
+        this.width = width;
+        this.height = height;
+
         this.depth = depth;
         this.tiles = tiles;
 
@@ -57,8 +59,8 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
         x -= startx;
         y -= starty;
 
-        x /= size;
-        y /= size;
+        x /= width;
+        y /= height;
 
         assert x >= 0;
         assert y >= 0;
@@ -73,14 +75,14 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
         int x = index % tiles;
         int y = index / tiles;
 
-        return new double[]{startx + size * ((x + .5) /tiles), starty + size * ( (y + .5) /tiles)};
+        return new double[]{startx + width * ((x + .5) /tiles), starty + height * ( (y + .5) /tiles)};
     }
 
     public double[] getCoordinates(int index) {
         int x = index % tiles;
         int y = index / tiles;
 
-        return new double[]{startx + size * (((double)x) /tiles), starty + size * ( ((double)y) /tiles)};
+        return new double[]{startx + width * (((double)x) /tiles), starty + height * ( ((double)y) /tiles)};
     }
 
     public void set(int index, Cluster<T> n) {
@@ -123,7 +125,7 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
     private void createSubLevelAtIndex(int i) {
         assert subClusters[i] == null;
         double[] co = getCoordinates(i);
-        subClusters[i] = new Cluster<>(co[0], co[1], size/tiles, depth + 1, tiles);
+        subClusters[i] = new Cluster<>(co[0], co[1], width/tiles, height/tiles, depth + 1, tiles);
     }
 
     private class ClusterIterator implements Iterator<Cluster<T>> {

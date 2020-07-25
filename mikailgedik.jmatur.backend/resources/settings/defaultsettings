@@ -9,22 +9,22 @@ string.file.defaultOutputFile=
 ###RENDER SETTINGS
 #render range
 double.setting.render.minX=-2
-double.setting.render.maxX=2
-double.setting.render.minY=-2
-double.setting.render.maxY=2
+double.setting.render.maxX=.5
+double.setting.render.minY=0
+double.setting.render.maxY=1
 #Height and Width of image
 int.setting.render.imageWidth=1000
 int.setting.render.imageHeight=1000
 #------------------------------------------------
 #CALCUTION SETTINGS
 double.setting.calculation.minX=-2
-double.setting.calculation.maxX=2
-double.setting.calculation.minY=-2
-double.setting.calculation.maxY=2
+double.setting.calculation.maxX=.5
+double.setting.calculation.minY=0
+double.setting.calculation.maxY=1
 #Max iterations per render point
-int.setting.calculation.maxIterations=1000
+int.setting.calculation.maxIterations=3000
 #Max CPU threads
-int.setting.calculation.maxThreads=23
+int.setting.calculation.maxThreads=6
 #First default init cluster depth
 int.setting.calculation.cluster.depth=2
 #Cluster tiles
