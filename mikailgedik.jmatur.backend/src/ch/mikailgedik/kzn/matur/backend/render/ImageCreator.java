@@ -1,13 +1,13 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
+import ch.mikailgedik.kzn.matur.backend.calculator.Cluster;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class ImageCreator {
@@ -28,8 +28,9 @@ public class ImageCreator {
         double maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
         int maxWaitTime = settingsManager.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
         int maxThreads = settingsManager.getI(SettingsManager.CALCULATION_MAX_THREADS);
-        ExecutorService executorService = Executors.newFixedThreadPool(maxThreads);
 
+        //ExecutorService executorService = Executors.newFixedThreadPool(maxThreads);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
         int pixelX = 0;
         int pixelIncr = width / maxThreads;
         for(int i = 0; i < maxThreads; i++) {
@@ -57,11 +58,11 @@ public class ImageCreator {
     }
 
     private static class ThreadRender implements Runnable {
-        private int startx, starty, endx, endy;
-        private int[] content;
-        private int width, height;
-        private double minx, maxx, miny, maxy;
-        private CalculationResult<CalculationResult.DataMandelbrot> data;
+        private final int startx, starty, endx, endy;
+        private final int[] content;
+        private final int totalWidth, totalHeight;
+        private final double minx, maxx, miny, maxy;
+        private final CalculationResult<CalculationResult.DataMandelbrot> data;
 
         public ThreadRender(int[] content, int startx, int starty, int endx, int endy,
                             double minx, double maxx, double miny, double maxy, int width, int height,
@@ -76,8 +77,8 @@ public class ImageCreator {
             this.maxx = maxx;
             this.miny = miny;
             this.maxy = maxy;
-            this.width = width;
-            this.height = height;
+            this.totalWidth = width;
+            this.totalHeight = height;
             this.data = data;
         }
 
@@ -85,23 +86,10 @@ public class ImageCreator {
         public void run() {
             for(int x = startx; x < endx; x++) {
                 for(int y = starty; y < endy; y++) {
-                    double[] loc = {minx + (maxx - minx) * (1.0 * (x + .5) / width),
-                            miny + (maxy - miny) * (1.0 * (y + .5) / height)};
+                    double[] loc = {minx + (maxx - minx) * (1.0 * (x + .5) / totalWidth),
+                            miny + (maxy - miny) * (1.0 * (y + .5) / totalHeight)};
 
-                    CalculationResult.Cluster<CalculationResult.DataMandelbrot> chunk = data.getCluster(loc[0], loc[1]);
-
-                    CalculationResult.DataMandelbrot d = chunk.get(0);
-
-                    double dist = (d.getX() - loc[0]) * (d.getX() - loc[0]) + (d.getY() - loc[1]) * (d.getY() - loc[1]);
-                    double tmpd;
-                    for(CalculationResult.DataMandelbrot tmp: chunk) {
-                        tmpd = (tmp.getX() - loc[0]) * (tmp.getX() - loc[0]) + (tmp.getY() - loc[1]) * (tmp.getY() - loc[1]);
-                        if(dist > tmpd) {
-                            dist = tmpd;
-                            d = tmp;
-                        }
-                    }
-                    content[x + ((height - y - 1) * width)] = d.getValue() ? 0xffffff: 0xff00ff;
+                    content[x + ((totalHeight - y - 1) * totalWidth)] = data.getNearest(loc[0], loc[1]).getValue() ? 0xffffff: 0xff00ff;
                 }
             }
         }

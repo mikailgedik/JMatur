@@ -1,12 +1,14 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import ch.mikailgedik.kzn.matur.backend.connector.Screen;
+import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.Stack;
+import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MandelbrotCalculator {
     private SettingsManager sm;
@@ -14,7 +16,11 @@ public class MandelbrotCalculator {
     private ExecutorService executorService;
 
     private int maxIter;
-    double xSampleSize, ySampleSize;
+
+    private int maxDepth = 2;
+
+    private AtomicInteger threadCounter;
+
     public MandelbrotCalculator(SettingsManager settingsManager) {
         this.sm = settingsManager;
     }
@@ -22,27 +28,38 @@ public class MandelbrotCalculator {
     public CalculationResult<CalculationResult.DataMandelbrot> calculate() {
         long t = System.currentTimeMillis();
         executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
+        threadCounter = new AtomicInteger(0);
+
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
         maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
+        maxDepth = sm.getI(SettingsManager.CALCULATION_CLUSTER_INIT_DEPTH);
+        int tiles = sm.getI(SettingsManager.CALCULATION_CLUSTER_TILES);
+
         double minx = sm.getD(SettingsManager.CALCULATION_MINX);
         double maxx = sm.getD(SettingsManager.CALCULATION_MAXX);
         double miny = sm.getD(SettingsManager.CALCULATION_MINY);
         double maxy = sm.getD(SettingsManager.CALCULATION_MAXY);
 
-        result = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy},
-                (int) Math.ceil((maxx - minx) * (maxy - miny)));
-
-        xSampleSize = (maxx - minx) / (sm.getI(SettingsManager.CALCULATION_TICKX) + 1);
-        ySampleSize = (maxy - miny) / (sm.getI(SettingsManager.CALCULATION_TICKY) + 1);
+        result = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy}, tiles);
 
         System.out.println("Init time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
 
-        for (CalculationResult.Cluster<CalculationResult.DataMandelbrot> c: result) {
-            executorService.submit(new ThreadCalculator(c));
-        }
+        Cluster<CalculationResult.DataMandelbrot> baseCluster = result.getCluster();
+        baseCluster.createSubLevels(maxDepth);
+        threadCounter.incrementAndGet();
 
-        executorService.shutdown();
+        executorService.submit(() -> {
+            try {
+                submitAllSubs(baseCluster);
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+            } finally {
+                executorService.shutdown();
+                threadCounter.decrementAndGet();
+            }
+        });
+
         try {
             if(!executorService.awaitTermination(maxWaitTime, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Threadpool exceeded max wait time (" + maxWaitTime + "ms)");
@@ -53,27 +70,50 @@ public class MandelbrotCalculator {
         }
 
         System.out.println("Calc time: " + (System.currentTimeMillis() - t) + "ms");
+
         t = System.currentTimeMillis();
         return result;
     }
 
+    private void submitAllSubs(Cluster<CalculationResult.DataMandelbrot> cluster) {
+        executorService.submit(new ThreadCalculator(cluster));
+        threadCounter.incrementAndGet();
+
+        if(!cluster.isUniform())
+        for(Cluster<CalculationResult.DataMandelbrot> d: cluster.clusterIterable()) {
+            if(d != null) {
+                submitAllSubs(d);
+            }
+        }
+    }
+
     private class ThreadCalculator implements Runnable {
-        private CalculationResult.Cluster<CalculationResult.DataMandelbrot> cluster;
+        private Cluster<CalculationResult.DataMandelbrot> cluster;
         private long calctime;
-        public ThreadCalculator(CalculationResult.Cluster<CalculationResult.DataMandelbrot> cluster) {
+
+        public ThreadCalculator(Cluster<CalculationResult.DataMandelbrot> cluster) {
             this.cluster = cluster;
             this.calctime = -1;
         }
 
         @Override
         public void run() {
-            long t = System.currentTimeMillis();
-            for(double x = cluster.getXstart(); x < cluster.getXend(); x += xSampleSize) {
-                for(double y = cluster.getYstart(); y < cluster.getYend(); y += ySampleSize) {
-                    cluster.add(new CalculationResult.DataMandelbrot(x, y, calc(x,y)));
+            try {
+                long t = System.currentTimeMillis();
+
+                for(int i = 0; i < cluster.getLength(); i++) {
+                    double[] co = cluster.getCenterCoordinates(i);
+                    cluster.setValue(i, new CalculationResult.DataMandelbrot(co[0], co[1], calc(co[0], co[1])));
                 }
+
+                //cluster.checkUniformity();
+
+                calctime = (System.currentTimeMillis() - t);
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+            } finally {
+                threadCounter.decrementAndGet();
             }
-            calctime = (System.currentTimeMillis() - t);
         }
 
         private boolean calc(double x, double y) {

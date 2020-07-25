@@ -13,20 +13,21 @@ double.setting.render.maxX=2
 double.setting.render.minY=-2
 double.setting.render.maxY=2
 #Height and Width of image
-int.setting.render.imageWidth=100
-int.setting.render.imageHeight=100
+int.setting.render.imageWidth=1000
+int.setting.render.imageHeight=1000
 #------------------------------------------------
 #CALCUTION SETTINGS
 double.setting.calculation.minX=-2
 double.setting.calculation.maxX=2
 double.setting.calculation.minY=-2
 double.setting.calculation.maxY=2
-#Amount of calculation points
-int.setting.calculation.tickX=100
-int.setting.calculation.tickY=100
 #Max iterations per render point
 int.setting.calculation.maxIterations=1000
 #Max CPU threads
 int.setting.calculation.maxThreads=23
+#First default init cluster depth
+int.setting.calculation.cluster.depth=2
+#Cluster tiles
+int.setting.calculation.cluster.tiles=8
 #Max time given to threadpool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000
