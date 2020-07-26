@@ -2,21 +2,19 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MandelbrotCalculator {
-    private SettingsManager sm;
+    private final SettingsManager sm;
     private CalculationResult<CalculationResult.DataMandelbrot> result;
     private ExecutorService executorService;
 
     private int maxIter;
 
     private int maxDepth;
-
     private AtomicInteger threadCounter;
+    private Phaser phaser;
 
     public MandelbrotCalculator(SettingsManager settingsManager) {
         this.sm = settingsManager;
@@ -26,6 +24,7 @@ public class MandelbrotCalculator {
         long t = System.currentTimeMillis();
         executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
         threadCounter = new AtomicInteger(0);
+        phaser = new Phaser(1);
 
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
         maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
@@ -43,21 +42,14 @@ public class MandelbrotCalculator {
         t = System.currentTimeMillis();
 
         Cluster<CalculationResult.DataMandelbrot> baseCluster = result.getCluster();
-        baseCluster.createSubLevels(maxDepth);
-        threadCounter.incrementAndGet();
 
-        executorService.submit(() -> {
-            try {
-                submitAllSubs(baseCluster);
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            } finally {
-                executorService.shutdown();
-                threadCounter.decrementAndGet();
-            }
-        });
+
+        phaser.register();
+        executorService.submit(new ThreadCalculator(baseCluster));
 
         try {
+            phaser.arriveAndAwaitAdvance();
+            executorService.shutdown();
             if(!executorService.awaitTermination(maxWaitTime, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Threadpool exceeded max wait time (" + maxWaitTime + "ms)");
             }
@@ -67,21 +59,8 @@ public class MandelbrotCalculator {
         }
 
         System.out.println("Calc time: " + (System.currentTimeMillis() - t) + "ms");
-
         t = System.currentTimeMillis();
         return result;
-    }
-
-    private void submitAllSubs(Cluster<CalculationResult.DataMandelbrot> cluster) {
-        executorService.submit(new ThreadCalculator(cluster));
-        threadCounter.incrementAndGet();
-
-        if(!cluster.isUniform())
-        for(Cluster<CalculationResult.DataMandelbrot> d: cluster.clusterIterable()) {
-            if(d != null) {
-                submitAllSubs(d);
-            }
-        }
     }
 
     private class ThreadCalculator implements Runnable {
@@ -95,6 +74,8 @@ public class MandelbrotCalculator {
 
         @Override
         public void run() {
+            threadCounter.incrementAndGet();
+
             try {
                 long t = System.currentTimeMillis();
 
@@ -103,11 +84,23 @@ public class MandelbrotCalculator {
                     cluster.setValue(i, new CalculationResult.DataMandelbrot(co[0], co[1], calc(co[0], co[1])));
                 }
 
+                if(cluster.getDepth() < maxDepth) {
+
+                    cluster.createAllSubLevels();
+                    phaser.bulkRegister(cluster.getLength());
+                    for(Cluster<CalculationResult.DataMandelbrot> cl: cluster.clusterIterable()) {
+                        if(cl != null) {
+                            executorService.submit(new ThreadCalculator(cl));
+                        }
+                    }
+                }
+
                 calctime = (System.currentTimeMillis() - t);
             } catch (RuntimeException e) {
                 e.printStackTrace();
             } finally {
                 threadCounter.decrementAndGet();
+                phaser.arrive();
             }
         }
 

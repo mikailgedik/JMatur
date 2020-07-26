@@ -1,10 +1,13 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import java.lang.invoke.VolatileCallSite;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class Cluster<T extends Cluster.Result> implements Iterable<T> {
     //Empty marker interface
     public interface Result {
+        boolean getValue();
     }
 
     private Cluster<T>[] subClusters;
@@ -14,10 +17,10 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
     private final int depth;
     private final int tiles;
 
-    private T uniValue;
-
     @SuppressWarnings("unchecked")
     public Cluster(double startx, double starty, double width, double height, int depth, int tiles) {
+        assert tiles > 1;
+
         this.startx = startx;
         this.starty = starty;
         this.width = width;
@@ -28,31 +31,6 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
 
         this.subClusters = (Cluster<T>[])new Cluster[tiles * tiles];
         this.values = (T[])new Result[tiles * tiles];
-    }
-
-    public boolean checkUniformity() {
-        for(T t: this.values) {
-            if(((CalculationResult.DataMandelbrot)t).getValue()) {
-                return true;
-            }
-        }
-
-        makeUniform();
-        return false;
-    }
-
-    private void makeUniform() {
-        this.uniValue = values[0];
-        this.values = null;
-        this.subClusters = null;
-    }
-
-    public boolean isUniform() {
-        return values == null;
-    }
-
-    public T getUniformValue() {
-        return uniValue;
     }
 
     public int getIndex(double x, double y) {

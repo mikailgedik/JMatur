@@ -17,12 +17,7 @@ public class CalculationResult<T extends Cluster.Result> {
         while((next = curr.get(x, y)) != null) {
             curr = next;
         }
-
-        if(curr.isUniform()) {
-            return curr.getUniformValue();
-        } else {
-            return curr.getValue(x, y);
-        }
+        return curr.getValue(x, y);
     }
 
     public static class DataMandelbrot implements Cluster.Result {
