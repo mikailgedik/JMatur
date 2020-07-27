@@ -11,6 +11,7 @@ public interface Constants {
     String RENDER_MAXY = "double.setting.render.maxY";
     String RENDER_IMAGE_WIDTH = "int.setting.render.imageWidth";
     String RENDER_IMAGE_HEIGHT = "int.setting.render.imageHeight";
+    String RENDER_ZOOM_FACTOR = "double.setting.render.zoomFactor";
 
     String CALCULATION_MINX = "double.setting.calculation.minX";
     String CALCULATION_MAXX = "double.setting.calculation.maxX";

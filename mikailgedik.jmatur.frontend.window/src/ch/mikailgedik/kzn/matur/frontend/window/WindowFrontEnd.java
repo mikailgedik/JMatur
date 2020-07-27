@@ -49,9 +49,7 @@ public class WindowFrontEnd extends JFrame {
 
             @Override
             public void mouseWheelMoved(MouseWheelEvent e) {
-                double zoom = Math.exp(-e.getPreciseWheelRotation()/4);
-                zoomIntoByFactor(zoom);
-                log("Zoomed now at " + canvas.getZoom());
+                zoomIntoByFactor(e.getPreciseWheelRotation());
             }
         };
 
@@ -63,20 +61,18 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void zoomIntoByFactor(double factor) {
-        canvas.zoom(factor);
-        canvas.repaint();
+        connector.zoom(factor);
+        connector.createImage();
+        canvas.setScreen(connector.getImage());
     }
 
     private void moveViewportByPixel(int pdx, int pdy) {
-        double dx, dy;
-        double minX = connector.getSettingD(Constants.RENDER_MINX);
-        double maxX = connector.getSettingD(Constants.RENDER_MAXX);
-        double minY = connector.getSettingD(Constants.RENDER_MINY);
-        double maxY = connector.getSettingD(Constants.RENDER_MAXY);
-        dx = pdx / (1.0 * (maxX - minX) * canvas.getWidth());
-        dy = pdy / (1.0 * (maxY - minY) * canvas.getHeight());
-        canvas.moveByRelativePosition(dx, dy);
-        canvas.repaint();
+        double dx = (1.0 * pdx / canvas.getWidth());
+        double dy = (1.0 * pdy / canvas.getHeight());
+
+        connector.moveRenderZone(dx, -dy);
+        connector.createImage();
+        canvas.setScreen(connector.getImage());
     }
 
     private void init() {

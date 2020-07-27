@@ -6,7 +6,7 @@ import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.TreeMap;
 
 /** This class connects the frontend with the backend */
@@ -16,6 +16,7 @@ public class Connector {
     private CalculationResult<CalculationResult.DataMandelbrot> calculationResult;
     private final ImageCreator imageCreator;
     private Screen image;
+    private double zoom;
 
     public Connector() {
         calculationResult = null;
@@ -66,5 +67,42 @@ public class Connector {
 
     public TreeMap<String, Object> getAllSettings() {
         return settingsManager.getAllSettings();
+    }
+
+    public void zoom(double ticks) {
+        double[] bounds = settingsManager.getRenderConstraints();
+        double factor = Math.exp(settingsManager.getD(Constants.RENDER_ZOOM_FACTOR) * ticks);
+
+        double dx = (bounds[1] - bounds[0])/2;
+        double dy = (bounds[3] - bounds[2])/2;
+        double midX = bounds[0] + dx;
+        double midY = bounds[2] + dy;
+
+        dx *= factor;
+        dy *= factor;
+
+        bounds[0] = midX - dx;
+        bounds[1] = midX + dx;
+        bounds[2] = midY - dy;
+        bounds[3] = midY + dy;
+
+
+        settingsManager.setRenderConstraints(bounds);
+    }
+
+    /** @param dx relative distance
+     * @param dy relative distance**/
+    public void moveRenderZone(double dx, double dy) {
+        double[] bounds = settingsManager.getRenderConstraints();
+
+        double w = (bounds[1] - bounds[0]);
+        double h = (bounds[3] - bounds[2]);
+
+        bounds[0] += w * dx;
+        bounds[1] += w * dx;
+        bounds[2] += h * dy;
+        bounds[3] += h * dy;
+
+        settingsManager.setRenderConstraints(bounds);
     }
 }

@@ -15,8 +15,10 @@ double.setting.render.maxY=1
 #Height and Width of image
 int.setting.render.imageWidth=1000
 int.setting.render.imageHeight=1000
+#Default zoom factor
+double.setting.render.zoomFactor=0.5
 #------------------------------------------------
-#CALCUTION SETTINGS
+###CALCUTION SETTINGS
 double.setting.calculation.minX=-2
 double.setting.calculation.maxX=.5
 double.setting.calculation.minY=0
@@ -31,3 +33,4 @@ int.setting.calculation.cluster.depth=2
 int.setting.calculation.cluster.tiles=8
 #Max time given to threadpool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000
+#--------------------------------------------------
