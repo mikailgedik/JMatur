@@ -33,6 +33,18 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
         this.values = (T[])new Result[tiles * tiles];
     }
 
+    public int getTiles() {
+        return tiles;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
     public int getIndex(double x, double y) {
         x -= startx;
         y -= starty;
@@ -134,6 +146,14 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
         }
     }
 
+    public Cluster<T> getSubByIndex(int[] list) {
+        Cluster<T> t = this;
+        for(int i: list) {
+            t = t.subClusters[i];
+        }
+        return t;
+    }
+
     @Override
     public Iterator<T> iterator() {
         return new ResultIterator();
@@ -161,5 +181,13 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
 
     public T getValue(double x, double y) {
         return values[getIndex(x, y)];
+    }
+
+    public double getStartx() {
+        return startx;
+    }
+
+    public double getStarty() {
+        return starty;
     }
 }
