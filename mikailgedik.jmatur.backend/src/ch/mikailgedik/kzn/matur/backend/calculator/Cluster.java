@@ -3,6 +3,8 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 import java.lang.invoke.VolatileCallSite;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Cluster<T extends Cluster.Result> implements Iterable<T> {
     //Empty marker interface
@@ -189,5 +191,28 @@ public class Cluster<T extends Cluster.Result> implements Iterable<T> {
 
     public double getStarty() {
         return starty;
+    }
+
+    public void forEachLowestSub(int maxDepth, Consumer<Cluster<T>> function) {
+        assert maxDepth >= this.depth;
+        if(maxDepth == getDepth()) {
+            function.accept(this);
+        } else {
+            int subs = 0;
+            for(Cluster<T> t: this.clusterIterable()) {
+                if(t != null) {
+                    subs++;
+                }
+            }
+            if(subs != this.subClusters.length) {
+                function.accept(this);
+            }
+            if(subs > 0) {
+                for(Cluster<T> t: this.clusterIterable()) {
+                    t.forEachLowestSub(maxDepth, function);
+                }
+            }
+
+        }
     }
 }

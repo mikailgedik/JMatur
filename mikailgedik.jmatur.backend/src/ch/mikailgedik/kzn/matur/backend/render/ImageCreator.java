@@ -5,6 +5,9 @@ import ch.mikailgedik.kzn.matur.backend.calculator.Cluster;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ImageCreator {
     private SettingsManager settingsManager;
     public ImageCreator(SettingsManager settingsManager) {
@@ -28,33 +31,13 @@ public class ImageCreator {
         double piDenY = height / (maxy - miny);
 
 
-        Cluster<CalculationResult.DataMandelbrot> cluster = data.getCluster();
+        Cluster<CalculationResult.DataMandelbrot> baseCluster = data.getCluster();
 
-        int requiredDepthX = (int)Math.ceil(Math.log(piDenX * cluster.getWidth())/Math.log(cluster.getTiles()));
-        int requiredDepthY = (int)Math.ceil(Math.log(piDenY * cluster.getHeight())/Math.log(cluster.getTiles()));
+        int requiredDepthX = (int)Math.ceil(Math.log(piDenX * baseCluster.getWidth())/Math.log(baseCluster.getTiles()));
+        int requiredDepthY = (int)Math.ceil(Math.log(piDenY * baseCluster.getHeight())/Math.log(baseCluster.getTiles()));
 
         int reqDepth = Math.max(requiredDepthX, requiredDepthY);
-        Screen screen = new Screen((int) Math.pow(cluster.getTiles(), reqDepth),
-                (int) Math.pow(cluster.getTiles(), reqDepth));
-
-        screen.forRect(0,0,screen.getWidth(), screen.getHeight(), (i) -> (int)(Math.random() * 0xffffff));
-
-        drawCluster(0,0, screen, cluster, reqDepth - 1, screen.getWidth());
-
-
-
-        {
-            double startx, starty, endx, endy;
-            startx = (minx - cluster.getStartx()) / (cluster.getWidth()) * screen.getWidth();
-            endx = (maxx - cluster.getStartx()) / (cluster.getWidth()) * screen.getWidth();
-
-            starty = (miny - cluster.getStarty()) / (cluster.getHeight()) * screen.getHeight();
-            endy = (maxy - cluster.getStarty()) / (cluster.getHeight())* screen.getHeight();
-
-            screen = screen.subScreen((int)startx, (int)starty,
-                    (int)(endx -startx),
-                    (int)(endy -starty));
-        }
+        Screen screen = allClusters(baseCluster, minx, maxx, miny, maxy, reqDepth -1);
 
         //Reverse y-Axis
         int[] help = new int[screen.getWidth()];
@@ -65,6 +48,78 @@ public class ImageCreator {
         }
 
         return screen.getScaledScreen(width, height);
+    }
+
+    private Screen allClusters(Cluster<CalculationResult.DataMandelbrot> baseCluster, double minx, double maxx, double miny, double maxy, int depth) {
+        double singleClusterWidth = baseCluster.getWidth() / Math.pow(baseCluster.getTiles(), depth);
+        double singleClusterHeight = baseCluster.getHeight() / Math.pow(baseCluster.getTiles(), depth);
+
+        double minRendX ,minRendY, maxRendX, maxRendY;
+
+        minRendX = (int)((minx - baseCluster.getStartx()) / singleClusterWidth);
+        minRendX = baseCluster.getStartx() + minRendX * singleClusterWidth;
+
+        maxRendX = (int)((maxx - baseCluster.getStartx()) / singleClusterWidth) + 1;
+        maxRendX = baseCluster.getStartx() + maxRendX * singleClusterWidth;
+
+        minRendY = (int)((miny - baseCluster.getStarty()) / singleClusterHeight);
+        minRendY = baseCluster.getStarty() + minRendY * singleClusterHeight;
+
+        maxRendY = (int)((maxy - baseCluster.getStarty()) / singleClusterHeight);
+        maxRendY = baseCluster.getStarty() + maxRendY * singleClusterHeight;
+
+        minx = minRendX;
+        maxx = maxRendX;
+        miny = minRendY;
+        maxy = maxRendY;
+
+        int tilesAmountWidth = (int)Math.ceil((maxx - minx) / singleClusterWidth);
+        int tilesAmountHeight = (int)Math.ceil((maxy - miny) / singleClusterHeight);
+
+        final Screen ret = new Screen(tilesAmountWidth * baseCluster.getTiles(), tilesAmountHeight * baseCluster.getTiles());
+
+
+
+        AtomicInteger co = new AtomicInteger();
+        double finalMinx = minx;
+        double finalMiny = miny;
+        double finalMaxx = maxx;
+        double finalMaxy = maxy;
+        baseCluster.forEachLowestSub(depth, (c) -> {
+            if(!(c.getStartx() >= finalMinx && c.getStarty() >= finalMiny && c.getStartx() + c.getWidth() <= finalMaxx && c.getStarty() + c.getHeight() <= finalMaxy)) {
+                return;
+            }
+
+            int xPos = (int)( tilesAmountWidth * baseCluster.getTiles() * (c.getStartx() - finalMinx) / (finalMaxx - finalMinx));
+            int yPos =  (int)(tilesAmountHeight * baseCluster.getTiles() * (c.getStarty() - finalMiny) / (finalMaxy - finalMiny));
+
+            if(c.getDepth() == depth) {
+                renderValues(xPos, yPos, ret, c);
+            } else {
+                renderValues(xPos, yPos, ret, c, (int)Math.pow(c.getTiles(), depth - c.getDepth()));
+            }
+
+            co.getAndIncrement();
+
+        });
+
+        return ret;
+    }
+
+    private void renderValues(int startX, int startY, Screen s, Cluster<CalculationResult.DataMandelbrot> cluster, int size) {
+        for(int y = 0; y < cluster.getTiles(); y++) {
+            for(int x = 0; x < cluster.getTiles(); x++) {
+                s.fillRect(startX + x * size, startY + y * size, size, size, cluster.getValue(x + y * cluster.getTiles()).getValue() ? 0xff00ff: 0x00ff00);
+            }
+        }
+    }
+
+    private void renderValues(int startX, int startY, Screen s, Cluster<CalculationResult.DataMandelbrot> cluster) {
+        for(int y = 0; y < cluster.getTiles(); y++) {
+            for(int x = 0; x < cluster.getTiles(); x++) {
+                s.setPixel(startX + x, startY + y, cluster.getValue(x + y * cluster.getTiles()).getValue() ? 0xff00ff: 0x00ff00);
+            }
+        }
     }
 
     private void drawCluster(int startx, int starty, Screen screen, Cluster<CalculationResult.DataMandelbrot> cluster, int maxDepth, int size) {
