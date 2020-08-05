@@ -7,24 +7,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MandelbrotCalculator {
     private final SettingsManager sm;
-    private CalculationResult<CalculationResult.DataMandelbrot> result;
+    private CalculationResult.CalculationResultMandelbrot result;
     private ExecutorService executorService;
 
     private int maxIter;
 
     private int maxDepth;
     private AtomicInteger threadCounter;
-    private Phaser phaser;
 
     public MandelbrotCalculator(SettingsManager settingsManager) {
         this.sm = settingsManager;
     }
 
-    public CalculationResult<CalculationResult.DataMandelbrot> calculate() {
+    public CalculationResult.CalculationResultMandelbrot calculateBase() {
         long t = System.currentTimeMillis();
         executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
+        executorService = Executors.newSingleThreadExecutor();
+
         threadCounter = new AtomicInteger(0);
-        phaser = new Phaser(1);
 
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
         maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
@@ -36,19 +36,21 @@ public class MandelbrotCalculator {
         double miny = sm.getD(SettingsManager.CALCULATION_MINY);
         double maxy = sm.getD(SettingsManager.CALCULATION_MAXY);
 
-        result = new CalculationResult<>(new double[]{minx, maxx}, new double[]{miny, maxy}, tiles);
+        result = new CalculationResult.CalculationResultMandelbrot(new double[]{minx, maxx}, new double[]{miny, maxy}, tiles);
 
         System.out.println("Init time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
 
-        Cluster<CalculationResult.DataMandelbrot> baseCluster = result.getCluster();
+        result.create(maxDepth);
 
-
-        phaser.register();
-        executorService.submit(new ThreadCalculator(baseCluster));
+        for(int i = 0; i <= maxDepth; i++) {
+            CalculationResult.Level<DataMandelbrot> l = result.getLevel(i);
+            for(int j = 0; j < l.get().length; j++) {
+                executorService.submit(new ThreadCalculator(i, j));
+            }
+        }
 
         try {
-            phaser.arriveAndAwaitAdvance();
             executorService.shutdown();
             if(!executorService.awaitTermination(maxWaitTime, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Threadpool exceeded max wait time (" + maxWaitTime + "ms)");
@@ -64,11 +66,12 @@ public class MandelbrotCalculator {
     }
 
     private class ThreadCalculator implements Runnable {
-        private Cluster<CalculationResult.DataMandelbrot> cluster;
+        private final int depth, cluster;
         private long calctime;
 
-        public ThreadCalculator(Cluster<CalculationResult.DataMandelbrot> cluster) {
+        public ThreadCalculator(int depth, int cluster) {
             this.cluster = cluster;
+            this.depth = depth;
             this.calctime = -1;
         }
 
@@ -78,29 +81,20 @@ public class MandelbrotCalculator {
 
             try {
                 long t = System.currentTimeMillis();
+                DataMandelbrot[] data = result.getCluster(depth, cluster);
 
-                for(int i = 0; i < cluster.getLength(); i++) {
-                    double[] co = cluster.getCenterCoordinates(i);
-                    cluster.setValue(i, new CalculationResult.DataMandelbrot(co[0], co[1], calc(co[0], co[1])));
+                double[] v;
+                for(int i = 0; i < data.length; i++) {
+                    v = result.centerCoordinates(depth, cluster, i);
+                    data[i] = new DataMandelbrot(v[0], v[1], calc(v[0], v[1]));
                 }
 
-                if(cluster.getDepth() < maxDepth) {
-
-                    cluster.createAllSubLevels();
-                    phaser.bulkRegister(cluster.getLength());
-                    for(Cluster<CalculationResult.DataMandelbrot> cl: cluster.clusterIterable()) {
-                        if(cl != null) {
-                            executorService.submit(new ThreadCalculator(cl));
-                        }
-                    }
-                }
 
                 calctime = (System.currentTimeMillis() - t);
             } catch (RuntimeException e) {
                 e.printStackTrace();
             } finally {
                 threadCounter.decrementAndGet();
-                phaser.arrive();
             }
         }
 

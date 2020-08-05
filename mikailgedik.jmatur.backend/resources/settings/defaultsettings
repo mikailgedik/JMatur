@@ -9,20 +9,20 @@ string.file.defaultOutputFile=
 ###RENDER SETTINGS
 #render range
 double.setting.render.minX=-2
-double.setting.render.maxX=.5
-double.setting.render.minY=0
-double.setting.render.maxY=1
+double.setting.render.maxX=2
+double.setting.render.minY=-2
+double.setting.render.maxY=2
 #Height and Width of image
-int.setting.render.imageWidth=100
-int.setting.render.imageHeight=100
+int.setting.render.imageWidth=10
+int.setting.render.imageHeight=10
 #Default zoom factor
 double.setting.render.zoomFactor=0.5
 #------------------------------------------------
 ###CALCUTION SETTINGS
 double.setting.calculation.minX=-2
-double.setting.calculation.maxX=.5
-double.setting.calculation.minY=0
-double.setting.calculation.maxY=1
+double.setting.calculation.maxX=2
+double.setting.calculation.minY=-2
+double.setting.calculation.maxY=2
 #Max iterations per render point
 int.setting.calculation.maxIterations=3000
 #Max CPU threads

@@ -1,19 +1,19 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
+import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.calculator.MandelbrotCalculator;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.Arrays;
 import java.util.TreeMap;
 
 /** This class connects the frontend with the backend */
 public class Connector {
     private final SettingsManager settingsManager;
     private final MandelbrotCalculator calculator;
-    private CalculationResult<CalculationResult.DataMandelbrot> calculationResult;
+    private CalculationResult.CalculationResultMandelbrot calculationResult;
     private final ImageCreator imageCreator;
     private Screen image;
     private double zoom;
@@ -47,7 +47,7 @@ public class Connector {
     }
 
     public void calculate() {
-        calculationResult = calculator.calculate();
+        calculationResult = calculator.calculateBase();
     }
 
     public void createImage() {
