@@ -98,4 +98,8 @@ public class ImageResult<T extends Result> {
     public double getHeight() {
         return height;
     }
+
+    public CalculationResult<T> getCalculationResult() {
+        return calculationResult;
+    }
 }

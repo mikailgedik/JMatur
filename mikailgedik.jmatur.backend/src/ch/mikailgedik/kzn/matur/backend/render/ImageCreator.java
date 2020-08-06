@@ -5,10 +5,15 @@ import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
+import java.util.ArrayList;
+
 public class ImageCreator {
     private SettingsManager settingsManager;
+    private ArrayList<ImageResult<DataMandelbrot>> buffer;
+
     public ImageCreator(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
+        this.buffer = new ArrayList<>();
         //TODO
     }
 
@@ -65,6 +70,14 @@ public class ImageCreator {
         startXCluster = (int) ((minx - data.getStartX()) / data.getWidth() * l.getSize());
         startYCluster = (int) ((miny - data.getStartY()) / data.getHeight() * l.getSize());
 
+        for(ImageResult<DataMandelbrot> ir: buffer) {
+            if(ir.getStartXCluster() == startXCluster && ir.getStartYCluster() == startYCluster &&
+            clustersX == ir.getClustersX() && clustersY == ir.getClustersY() && depth == ir.getDepth() && data == ir.getCalculationResult()) {
+                return ir;
+            }
+        }
+
+
         ImageResult<DataMandelbrot> ret = new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY, depth, data);
 
         int cX, cY;
@@ -89,6 +102,7 @@ public class ImageCreator {
             }
         }
 
+        buffer.add(ret);
         return ret;
     }
 }
