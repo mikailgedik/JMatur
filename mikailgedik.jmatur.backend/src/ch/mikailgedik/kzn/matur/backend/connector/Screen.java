@@ -119,7 +119,7 @@ public class Screen {
                 int xOnThis = x + xPoint;
                 if (xOnThis >= this.width)
                     continue;
-                if(xOnThis < 0) {
+                if (xOnThis < 0) {
                     //TODO optimize
                     continue;
                 }
@@ -129,6 +129,7 @@ public class Screen {
         }
         return screen;
     }
+
     /** Makes a deep copy of this
      * @return a deep copy of this*/
     public Screen copy() {

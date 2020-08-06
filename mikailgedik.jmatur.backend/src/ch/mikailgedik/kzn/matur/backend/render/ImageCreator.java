@@ -5,8 +5,6 @@ import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class ImageCreator {
     private SettingsManager settingsManager;
     public ImageCreator(SettingsManager settingsManager) {
@@ -28,13 +26,21 @@ public class ImageCreator {
         double piDenX = width / (maxx - minx);
         double piDenY = height / (maxy - miny);
 
-
-
         int requiredDepthX = (int)Math.ceil(Math.log(piDenX * data.getWidth())/Math.log(data.getTiles()));
         int requiredDepthY = (int)Math.ceil(Math.log(piDenY * data.getHeight())/Math.log(data.getTiles()));
 
         int reqDepth = Math.max(requiredDepthX, requiredDepthY);
-        Screen screen = allClusters(data, minx, maxx, miny, maxy, reqDepth);
+
+        ImageResult<DataMandelbrot> imageResult = createImageResult(minx, maxx, miny, maxy, reqDepth, data);
+
+        Screen screen = imageResult.getScreen();
+
+        int sx = (int)((minx - imageResult.getStartX()) / imageResult.getWidth() * screen.getWidth()),
+                sy = (int)((miny - imageResult.getStartY()) / imageResult.getHeight() * screen.getHeight()),
+                ex = (int)((maxx - imageResult.getStartX()) / imageResult.getWidth() * screen.getWidth()),
+                ey = (int)((maxy - imageResult.getStartY()) / imageResult.getHeight() * screen.getHeight());
+
+        screen = screen.subScreen(sx, sy,ex - sx, ey -sy);
 
         //Reverse y-Axis
         int[] help = new int[screen.getWidth()];
@@ -47,32 +53,42 @@ public class ImageCreator {
         return screen;
     }
 
-    private Screen allClusters(CalculationResult.CalculationResultMandelbrot result, double minx, double maxx, double miny, double maxy, int depth) {
-        CalculationResult.Level<DataMandelbrot> l = result.getLevel(depth);
-        Screen ret = new Screen(l.getSize() * result.getTiles(), l.getSize() * result.getTiles());
+    private ImageResult<DataMandelbrot> createImageResult(double minx, double maxx, double miny, double maxy, int depth, CalculationResult.CalculationResultMandelbrot data) {
+        CalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
+        double chunkWidth = data.getWidth() / l.getSize(), chunkHeight = data.getHeight() / l.getSize();
 
-        for(int y = 0; y < l.getSize(); y++) {
-            for(int x = 0; x < l.getSize(); x++) {
-                drawData(l.get()[x + y * l.getSize()], x * result.getTiles(), y * result.getTiles(), ret, result.getTiles());
+        int clustersX = (int) Math.ceil((maxx - minx) / chunkWidth);
+        int clustersY = (int) Math.ceil((maxy - miny) / chunkHeight);
+
+        int startXCluster, startYCluster;
+
+        startXCluster = (int) ((minx - data.getStartX()) / data.getWidth() * l.getSize());
+        startYCluster = (int) ((miny - data.getStartY()) / data.getHeight() * l.getSize());
+
+        ImageResult<DataMandelbrot> ret = new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY, depth, data);
+
+        int cX, cY;
+        for(int x = 0; x < clustersX; x++) {
+            cX = (x + startXCluster);
+            if(cX < 0) {
+                continue;
+            }
+            if(cX >= l.getSize()) {
+                break;
+            }
+
+            for(int y = 0; y < clustersY; y++) {
+                cY = (y + startYCluster);
+                if(cY < 0) {
+                    continue;
+                }
+                if(cY >= l.getSize()) {
+                    break;
+                }
+                ret.drawCluster(l.get()[cX + l.getSize() * cY], depth, x * data.getTiles(), y * data.getTiles());
             }
         }
 
-
-        int startX, startY, endX, endY;
-
-        startX =(int) ((minx - result.getStartX()) / result.getWidth() * ret.getWidth());
-        startY =(int) ((miny - result.getStartY()) / result.getHeight() * ret.getHeight());
-        endX =  (int) ((maxx - result.getStartX()) / result.getWidth() * ret.getWidth());
-        endY =  (int) ((maxy - result.getStartY()) / result.getHeight() * ret.getHeight());
-
-        return ret.subScreen(startX, startY, endX -startX, endY -startY);
-    }
-
-    private void drawData(DataMandelbrot[] d, int startX, int startY, Screen s, int tiles) {
-        for(int x = 0; x < tiles; x++) {
-            for(int y = 0; y < tiles; y++) {
-                s.setPixel(x + startX, y + startY, d[x + y * tiles].getValue() ? 0xff00ff : 0x00ff00);
-            }
-        }
+        return ret;
     }
 }

@@ -19,7 +19,7 @@ public class DataMandelbrot implements Result {
         return y;
     }
 
-    public boolean getValue() {
-        return value;
+    public int getColor() {
+        return value ? 0xff00ff : 0x00ff00;
     }
 }

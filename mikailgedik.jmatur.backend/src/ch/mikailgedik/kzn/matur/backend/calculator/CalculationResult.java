@@ -13,9 +13,9 @@ public abstract class CalculationResult<T extends Result> {
     private final ArrayList<Level<T>> content;
 
     public static class Level<T extends Result> {
-        private int depth;
-        private int size;
-        private T[][] content;
+        private final int depth;
+        private final int size;
+        private final T[][] content;
 
         public Level(int depth, int size, T[][] content) {
             this.size = size;
@@ -34,11 +34,6 @@ public abstract class CalculationResult<T extends Result> {
         public int getDepth() {
             return depth;
         }
-
-        public void set(T[][] content) {
-            this.content = content;
-            assert content.length == size * size;
-        }
     }
 
     public CalculationResult(double[] xBounds, double[] yBounds, int tiles) {
@@ -52,42 +47,17 @@ public abstract class CalculationResult<T extends Result> {
         this.tiles = tiles;
     }
 
-    public double[] startCoordinates(int depth, int cluster, int value) {
-        int l = (int)Math.pow(this.tiles, depth);
-
-        double[] ret = new double[] {
-                (cluster % l) * (width / l) + startX,
-                (cluster / l) * (height / l) + startY
-        };
-        l *= tiles;
-
-        ret[0] += (value % tiles) * (width / l);
-        ret[1] += (value / tiles) * (height / l);
-
-
-        return ret;
-    }
-
-    public double[] startCoordinates(int depth, int cluster) {
-        int l = (int)Math.pow(this.tiles, depth);
-
-        return new double[] {
-                (cluster % l) * (width / l) + startX,
-                (cluster / l) * (height / l) + startY
-        };
-    }
-
     public double[] centerCoordinates(int depth, int cluster, int value) {
         int l = (int)Math.pow(this.tiles, depth);
 
         double[] ret = new double[] {
                 (cluster % l) * (width / l) + startX,
-                (cluster / l) * (height / l) + startY
+                (int)(cluster / l) * (height / l) + startY
         };
         l *= tiles;
 
         ret[0] += (value % tiles) * (width / l);
-        ret[1] += (value / tiles) * (height / l);
+        ret[1] += (int)(value / tiles) * (height / l);
 
         ret[0] += (width / l / 2);
         ret[1] += (height / l / 2);
@@ -95,13 +65,17 @@ public abstract class CalculationResult<T extends Result> {
         return ret;
     }
 
-    public double[] centerCoordinates(int depth, int cluster) {
+    public double[] centerCoordinates(int depth, int clusterX, int clusterY, int value) {
         int l = (int)Math.pow(this.tiles, depth);
 
         double[] ret = new double[] {
-                (cluster % l) * (width / l) + startX,
-                (cluster / l) * (height / l) + startY
+                clusterX * (width / l) + startX,
+                clusterY * (height / l) + startY
         };
+        l *= tiles;
+
+        ret[0] += (value % tiles) * (width / l);
+        ret[1] += (value / tiles) * (height / l);
 
         ret[0] += (width / l / 2);
         ret[1] += (height / l / 2);
