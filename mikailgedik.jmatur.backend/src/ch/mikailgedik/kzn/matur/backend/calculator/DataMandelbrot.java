@@ -1,11 +1,14 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import java.awt.*;
+import java.util.function.Function;
+
 public class DataMandelbrot implements Result {
 
     private final double x, y;
-    private final boolean value;
+    private final int value;
 
-    public DataMandelbrot(double x, double y, boolean value) {
+    public DataMandelbrot(double x, double y, int value) {
         this.x = x;
         this.y = y;
         this.value = value;
@@ -19,7 +22,7 @@ public class DataMandelbrot implements Result {
         return y;
     }
 
-    public int getColor() {
-        return value ? 0xff00ff : 0x00ff00;
+    public int getValue() {
+        return value;
     }
 }

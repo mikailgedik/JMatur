@@ -98,7 +98,7 @@ public class MandelbrotCalculator {
             }
         }
 
-        private boolean calc(double x, double y) {
+        private int calc(double x, double y) {
             double a = 0, b = 0, ta, tb;
             for(int i = 0; i < maxIter; ++i) {
                 ta = a*a - b*b + x;
@@ -106,10 +106,10 @@ public class MandelbrotCalculator {
                 a = ta;
                 b = tb;
                 if(a*a + b*b > 4) {
-                    return false;
+                    return i;
                 }
             }
-            return true;
+            return -1;
         }
     }
 

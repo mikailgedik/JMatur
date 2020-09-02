@@ -4,15 +4,16 @@ import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
 import ch.mikailgedik.kzn.matur.backend.calculator.Result;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ImageResult<T extends Result> {
     private final int depth, clustersX, clustersY, startXCluster, startYCluster;
     private final Screen screen, source;
     private final CalculationResult<T> calculationResult;
     private final double startX, startY, width, height;
+    private final Function<Integer, Integer> colorFunction;
 
-    public ImageResult(int startXCluster, int startYCluster, int clustersX, int clustersY, int depth, CalculationResult<T> calculationResult) {
+    public ImageResult(int startXCluster, int startYCluster, int clustersX, int clustersY, int depth, CalculationResult<T> calculationResult, Function<Integer, Integer> colorFunction) {
         this.depth = depth;
 
         this.startXCluster = startXCluster;
@@ -28,6 +29,7 @@ public class ImageResult<T extends Result> {
         this.height = clustersY * calculationResult.getHeight() / Math.pow(calculationResult.getTiles(), depth);
 
         this.calculationResult = calculationResult;
+        this.colorFunction = colorFunction;
 
         this.source = new Screen(clustersX, clustersY, -1);
 
@@ -39,13 +41,13 @@ public class ImageResult<T extends Result> {
             int recSize = calculationResult.getLevel(this.depth - depth).getSize();
             for(int x = 0; x < calculationResult.getTiles(); x++) {
                 for(int y = 0; y < calculationResult.getTiles(); y++) {
-                    screen.fillRect(x * recSize + startX, y * recSize + startY, recSize, recSize, t[x + y * calculationResult.getTiles()].getColor());
+                    screen.fillRect(x * recSize + startX, y * recSize + startY, recSize, recSize, colorFunction.apply(t[x + y * calculationResult.getTiles()].getValue()));
                 }
             }
         } else {
             for(int x = 0; x < calculationResult.getTiles(); x++) {
                 for(int y = 0; y < calculationResult.getTiles(); y++) {
-                    screen.setPixel(x + startX, y + startY, t[x + y * calculationResult.getTiles()].getColor());
+                    screen.setPixel(x + startX, y + startY, colorFunction.apply(t[x + y * calculationResult.getTiles()].getValue()));
                 }
             }
         }
