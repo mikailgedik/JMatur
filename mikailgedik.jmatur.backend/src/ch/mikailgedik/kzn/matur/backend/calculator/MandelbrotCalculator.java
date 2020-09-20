@@ -41,7 +41,7 @@ public class MandelbrotCalculator {
         System.out.println("Init time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
 
-        result.create(maxDepth);
+        result.ensureDepth(maxDepth);
 
         for(int i = 0; i <= maxDepth; i++) {
             CalculationResult.Level<DataMandelbrot> l = result.getLevel(i);

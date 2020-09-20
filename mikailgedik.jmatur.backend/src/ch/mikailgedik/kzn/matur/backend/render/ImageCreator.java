@@ -62,6 +62,13 @@ public class ImageCreator implements Function<Integer, Integer> {
     }
 
     private ImageResult<DataMandelbrot> createImageResult(double minx, double maxx, double miny, double maxy, int depth, CalculationResult.CalculationResultMandelbrot data) {
+        ArrayList<CalculationResult.Level<DataMandelbrot>> levels = data.getLevels();
+
+        if(levels.size() <= depth) {
+            data.ensureDepth(depth);
+            //assert false;
+        }
+
         CalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
         double chunkWidth = data.getWidth() / l.getSize(), chunkHeight = data.getHeight() / l.getSize();
 
@@ -80,30 +87,9 @@ public class ImageCreator implements Function<Integer, Integer> {
             }
         }
 
-
-        ImageResult<DataMandelbrot> ret = new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY, depth, data, this);
-
-        int cX, cY;
-        for(int x = 0; x < clustersX; x++) {
-            cX = (x + startXCluster);
-            if(cX < 0) {
-                continue;
-            }
-            if(cX >= l.getSize()) {
-                break;
-            }
-
-            for(int y = 0; y < clustersY; y++) {
-                cY = (y + startYCluster);
-                if(cY < 0) {
-                    continue;
-                }
-                if(cY >= l.getSize()) {
-                    break;
-                }
-                ret.drawCluster(l.get()[cX + l.getSize() * cY], depth, x * data.getTiles(), y * data.getTiles());
-            }
-        }
+        ImageResult<DataMandelbrot> ret =
+                new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY,
+                        depth, data, this);
 
         buffer.add(ret);
         return ret;

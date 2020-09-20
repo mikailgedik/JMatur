@@ -83,8 +83,9 @@ public abstract class CalculationResult<T extends Result> {
         return ret;
     }
 
-    public void create(int depth) {
-        for(int i = 0; i <= depth; i++) {
+    /** Only creates new levels, does not delete old ones*/
+    public void ensureDepth(int depth) {
+        for(int i = content.size(); i <= depth; i++) {
             Level<T> level = constructLevel(i);
             content.add(level);
 
@@ -108,6 +109,10 @@ public abstract class CalculationResult<T extends Result> {
 
     public Level<T> getLevel(int depth) {
         return content.get(depth);
+    }
+
+    public ArrayList<Level<T>> getLevels() {
+        return content;
     }
 
     public T[] getCluster(int depth, int cluster) {
