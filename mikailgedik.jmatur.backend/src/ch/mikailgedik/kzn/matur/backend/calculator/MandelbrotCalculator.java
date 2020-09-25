@@ -1,5 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import ch.mikailgedik.kzn.matur.backend.render.ImageResult;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.util.concurrent.*;
@@ -11,7 +12,6 @@ public class MandelbrotCalculator {
     private ExecutorService executorService;
 
     private int maxIter;
-
     private int maxDepth;
     private AtomicInteger threadCounter;
 
@@ -21,10 +21,8 @@ public class MandelbrotCalculator {
 
     public CalculationResult.CalculationResultMandelbrot calculateBase() {
         long t = System.currentTimeMillis();
-        executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
-        executorService = Executors.newSingleThreadExecutor();
 
-        threadCounter = new AtomicInteger(0);
+        initServices();
 
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
         maxIter = sm.getI(SettingsManager.CALCULATION_MAX_ITERATIONS);
@@ -58,11 +56,54 @@ public class MandelbrotCalculator {
         } catch (InterruptedException e) {
             executorService.shutdownNow();
             Thread.currentThread().interrupt();
+        } finally {
+            deleteServices();
         }
+
 
         System.out.println("Calc time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
+
         return result;
+    }
+
+    public void addTargetsFromImageResult(ImageResult<DataMandelbrot> imageResult) {
+        initServices();
+        result.ensureDepth(imageResult.getDepth());
+        int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
+
+        imageResult.forEachIncomplete(this::addTarget);
+
+        try {
+            executorService.shutdown();
+            if(!executorService.awaitTermination(maxWaitTime, TimeUnit.MILLISECONDS)) {
+                throw new RuntimeException("Threadpool exceeded max wait time (" + maxWaitTime + "ms)");
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        } finally {
+            deleteServices();
+        }
+        //assert false;
+    }
+
+    private void addTarget(Object o) {
+        int[] param = (int[])o;
+        executorService.submit(new ThreadCalculator(param[0], param[1] + param[2] * result.getLevel(param[0]).getSize()));
+    }
+
+    private void initServices() {
+        assert executorService == null;
+        assert threadCounter == null;
+
+        executorService = Executors.newFixedThreadPool(sm.getI(SettingsManager.CALCULATION_MAX_THREADS));
+        threadCounter = new AtomicInteger(0);
+    }
+
+    private void deleteServices() {
+        executorService = null;
+        threadCounter = null;
     }
 
     private class ThreadCalculator implements Runnable {

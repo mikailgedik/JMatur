@@ -5,6 +5,8 @@ import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.calculator.Result;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
+import java.util.ArrayList;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ImageResult<T extends Result> {
@@ -13,6 +15,8 @@ public class ImageResult<T extends Result> {
     private final CalculationResult<T> calculationResult;
     private final double startX, startY, width, height;
     private final Function<Integer, Integer> colorFunction;
+    private boolean complete;
+
 
     public ImageResult(int startXCluster, int startYCluster, int clustersX, int clustersY, int depth, CalculationResult<T> calculationResult, Function<Integer, Integer> colorFunction) {
         this.depth = depth;
@@ -35,10 +39,11 @@ public class ImageResult<T extends Result> {
         this.source = new Screen(clustersX, clustersY, -1);
 
         this.screen = new Screen(clustersX * calculationResult.getTiles(), clustersY * calculationResult.getTiles());
-        populate();
+        this.complete = false;
     }
 
-    public void populate() {
+    public boolean populate() {
+        boolean complete = true;
         CalculationResult.Level<T> l = calculationResult.getLevel(depth);
         int cX, cY;
         for(int x = 0; x < clustersX; x++) {
@@ -57,6 +62,9 @@ public class ImageResult<T extends Result> {
                 }
                 if(cY >= l.getSize()) {
                     break;
+                }
+                if(source.getPixel(x, y) == this.depth) {
+                    continue;
                 }
                 T[] cluster = l.get()[cX + l.getSize() * cY];
                 if(cluster[0] == null) {
@@ -80,28 +88,30 @@ public class ImageResult<T extends Result> {
                     screen.fillRect(x * calculationResult.getTiles(), y * calculationResult.getTiles(),
                             calculationResult.getTiles(), calculationResult.getTiles(), colorFunction.apply(
                                     cluster[index].getValue()));
+                    source.setPixel(x, y, tmpDepth);
+                    complete = false;
                 } else {
-                    this.drawCluster(cluster, depth, x * calculationResult.getTiles(), y * calculationResult.getTiles());
+                    this.drawCluster(cluster, x * calculationResult.getTiles(), y * calculationResult.getTiles());
+                    source.setPixel(x, y, depth);
                 }
+            }
+        }
+        if(complete) {
+            this.complete = true;
+        }
+        return complete;
+    }
+
+    private void drawCluster(T[] t, int startX, int startY) {
+        for(int x = 0; x < calculationResult.getTiles(); x++) {
+            for(int y = 0; y < calculationResult.getTiles(); y++) {
+                screen.setPixel(x + startX, y + startY, colorFunction.apply(t[x + y * calculationResult.getTiles()].getValue()));
             }
         }
     }
 
-    public void drawCluster(T[] t, int depth, int startX, int startY) {
-        if(depth < this.depth) {
-            int recSize = calculationResult.getLevel(this.depth - depth).getSize();
-            for(int x = 0; x < calculationResult.getTiles(); x++) {
-                for(int y = 0; y < calculationResult.getTiles(); y++) {
-                    screen.fillRect(x * recSize + startX, y * recSize + startY, recSize, recSize, colorFunction.apply(t[x + y * calculationResult.getTiles()].getValue()));
-                }
-            }
-        } else {
-            for(int x = 0; x < calculationResult.getTiles(); x++) {
-                for(int y = 0; y < calculationResult.getTiles(); y++) {
-                    screen.setPixel(x + startX, y + startY, colorFunction.apply(t[x + y * calculationResult.getTiles()].getValue()));
-                }
-            }
-        }
+    public boolean isComplete() {
+        return complete;
     }
 
     public void setValidation(int x, int y, int status) {
@@ -154,5 +164,15 @@ public class ImageResult<T extends Result> {
 
     public CalculationResult<T> getCalculationResult() {
         return calculationResult;
+    }
+
+    public void forEachIncomplete(Consumer<Object> f) {
+        for(int y = 0; y < source.getHeight(); y++) {
+            for(int x = 0; x < source.getWidth(); x++) {
+                if(source.getPixel(x,y) != depth) {
+                    f.accept(new int[]{depth, x + startXCluster, y + startYCluster});
+                }
+            }
+        }
     }
 }

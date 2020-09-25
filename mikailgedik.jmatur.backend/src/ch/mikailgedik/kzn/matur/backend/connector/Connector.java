@@ -18,13 +18,16 @@ public class Connector {
     private Screen image;
     private double zoom;
 
-    public Connector() {
+    private FractalListener listener;
+
+    public Connector(FractalListener listener) {
         calculationResult = null;
         image = null;
 
         settingsManager = SettingsManager.createDefaultSettingsManager();
         calculator = new MandelbrotCalculator(settingsManager);
         imageCreator = new ImageCreator(settingsManager);
+        this.listener = listener;
     }
 
     public Object getSetting(String name) {
@@ -53,6 +56,13 @@ public class Connector {
     public void createImage() {
         assert calculationResult != null;
         image = imageCreator.createImage(calculationResult);
+
+        if(!imageCreator.getLatestImageResult().isComplete()) {
+            calculator.addTargetsFromImageResult(imageCreator.getLatestImageResult());
+            imageCreator.getLatestImageResult().populate();
+            image = imageCreator.createImage(calculationResult);
+        }
+
     }
 
     public Screen getImage() {

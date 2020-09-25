@@ -13,23 +13,23 @@ import java.util.function.Function;
 public class ImageCreator implements Function<Integer, Integer> {
     private SettingsManager settingsManager;
     private ArrayList<ImageResult<DataMandelbrot>> buffer;
-
+    private ImageResult<DataMandelbrot> latestImageResult;
+    /**latest params used*/
+    private double minx,  maxx, miny, maxy;
     public ImageCreator(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
         this.buffer = new ArrayList<>();
+        latestImageResult = null;
         //TODO
     }
 
     public Screen createImage(CalculationResult.CalculationResultMandelbrot data) {
         int width = settingsManager.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = settingsManager.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
-        Screen result = new Screen(width, height);
 
-        double minx = settingsManager.getD(SettingsManager.RENDER_MINX);
-        double maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);
-        double miny = settingsManager.getD(SettingsManager.RENDER_MINY);
-        double maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
-        int maxWaitTime = settingsManager.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
-        int maxThreads = settingsManager.getI(SettingsManager.CALCULATION_MAX_THREADS);
+        final double minx = settingsManager.getD(SettingsManager.RENDER_MINX);
+        final double maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);
+        final double miny = settingsManager.getD(SettingsManager.RENDER_MINY);
+        final double maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
 
         double piDenX = width / (maxx - minx);
         double piDenY = height / (maxy - miny);
@@ -39,26 +39,12 @@ public class ImageCreator implements Function<Integer, Integer> {
 
         int reqDepth = Math.max(requiredDepthX, requiredDepthY);
 
-        ImageResult<DataMandelbrot> imageResult = createImageResult(minx, maxx, miny, maxy, reqDepth, data);
-
-        Screen screen = imageResult.getScreen();
-
-        int sx = (int)((minx - imageResult.getStartX()) / imageResult.getWidth() * screen.getWidth()),
-                sy = (int)((miny - imageResult.getStartY()) / imageResult.getHeight() * screen.getHeight()),
-                ex = (int)((maxx - imageResult.getStartX()) / imageResult.getWidth() * screen.getWidth()),
-                ey = (int)((maxy - imageResult.getStartY()) / imageResult.getHeight() * screen.getHeight());
-
-        screen = screen.subScreen(sx, sy,ex - sx, ey -sy);
-
-        //Reverse y-Axis
-        int[] help = new int[screen.getWidth()];
-        for(int y = 0; y < screen.getHeight() /2; y++) {
-            System.arraycopy(screen.getPixels(), y * help.length, help, 0, help.length);
-            System.arraycopy(screen.getPixels(), (screen.getHeight() - y -1) * help.length, screen.getPixels(), y * help.length, help.length);
-            System.arraycopy(help, 0, screen.getPixels(), (screen.getHeight() - y -1) * help.length, help.length);
-        }
-
-        return screen;
+        this.latestImageResult = createImageResult(minx, maxx, miny, maxy, reqDepth, data);
+        this.minx = minx;
+        this.miny = miny;
+        this.maxx = maxx;
+        this.maxy = maxy;
+        return getLatestScreen();
     }
 
     private ImageResult<DataMandelbrot> createImageResult(double minx, double maxx, double miny, double maxy, int depth, CalculationResult.CalculationResultMandelbrot data) {
@@ -66,7 +52,6 @@ public class ImageCreator implements Function<Integer, Integer> {
 
         if(levels.size() <= depth) {
             data.ensureDepth(depth);
-            //assert false;
         }
 
         CalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
@@ -91,8 +76,35 @@ public class ImageCreator implements Function<Integer, Integer> {
                 new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY,
                         depth, data, this);
 
+        ret.populate();
+
         buffer.add(ret);
         return ret;
+    }
+
+    public void updateLatestImageResult() {
+        this.latestImageResult.populate();
+    }
+
+    public Screen getLatestScreen() {
+        Screen screen = latestImageResult.getScreen();
+
+        int sx = (int)((minx - latestImageResult.getStartX()) / latestImageResult.getWidth() * screen.getWidth()),
+                sy = (int)((miny - latestImageResult.getStartY()) / latestImageResult.getHeight() * screen.getHeight()),
+                ex = (int)((maxx - latestImageResult.getStartX()) / latestImageResult.getWidth() * screen.getWidth()),
+                ey = (int)((maxy - latestImageResult.getStartY()) / latestImageResult.getHeight() * screen.getHeight());
+
+        screen = screen.subScreen(sx, sy,ex - sx, ey -sy);
+
+        //Reverse y-Axis
+        int[] help = new int[screen.getWidth()];
+        for(int y = 0; y < screen.getHeight() /2; y++) {
+            System.arraycopy(screen.getPixels(), y * help.length, help, 0, help.length);
+            System.arraycopy(screen.getPixels(), (screen.getHeight() - y -1) * help.length, screen.getPixels(), y * help.length, help.length);
+            System.arraycopy(help, 0, screen.getPixels(), (screen.getHeight() - y -1) * help.length, help.length);
+        }
+
+        return screen;
     }
 
     @Override
@@ -105,5 +117,9 @@ public class ImageCreator implements Function<Integer, Integer> {
         double log = Math.log(value);
 
         return Color.HSBtoRGB((float) (log/max),1, 1) & 0xffffff;
+    }
+
+    public ImageResult<DataMandelbrot> getLatestImageResult() {
+        return latestImageResult;
     }
 }

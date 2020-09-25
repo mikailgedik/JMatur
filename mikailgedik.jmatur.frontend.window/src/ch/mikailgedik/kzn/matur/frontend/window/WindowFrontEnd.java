@@ -28,7 +28,7 @@ public class WindowFrontEnd extends JFrame {
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
-        connector = new Connector();
+        connector = new Connector(null);
         init();
 
         splitPane.setDividerLocation(0.8);
@@ -58,6 +58,19 @@ public class WindowFrontEnd extends JFrame {
         canvas.addMouseWheelListener(adapter);
 
         refresh();
+
+        //TODO test zoom
+
+        new Thread(() -> {
+            while(true) {
+                try {
+                    Thread.sleep(10);
+                    zoomIntoByFactor(-.01);
+                } catch (InterruptedException e) {
+                    Thread.interrupted();
+                }
+            }
+        }).start();
     }
 
     private void zoomIntoByFactor(double factor) {
