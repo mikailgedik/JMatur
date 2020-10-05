@@ -67,10 +67,12 @@ public class WindowFrontEnd extends JFrame {
                     Thread.sleep(10);
                     zoomIntoByFactor(-.01);
                 } catch (InterruptedException e) {
-                    Thread.interrupted();
+                    Thread.currentThread().interrupt();
                 }
             }
         }).start();
+
+
     }
 
     private void zoomIntoByFactor(double factor) {
