@@ -16,7 +16,6 @@ public class Connector {
     private CalculationResult.CalculationResultMandelbrot calculationResult;
     private final ImageCreator imageCreator;
     private Screen image;
-    private double zoom;
 
     private FractalListener listener;
 
@@ -115,4 +114,11 @@ public class Connector {
 
         settingsManager.setRenderConstraints(bounds);
     }
+
+    public void setImagePixelSize(int w, int h) {
+        settingsManager.addSetting(Constants.RENDER_IMAGE_WIDTH, w);
+        settingsManager.addSetting(Constants.RENDER_IMAGE_HEIGHT, h);
+
+    }
+
 }

@@ -6,10 +6,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
+import java.awt.event.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -33,34 +30,12 @@ public class WindowFrontEnd extends JFrame {
 
         splitPane.setDividerLocation(0.8);
 
-        MouseAdapter adapter = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                mousePoint = e.getPoint();
-            }
 
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if(mousePoint != null) {
-                    moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
-                    mousePoint = e.getPoint();
-                }
-            }
-
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-                zoomIntoByFactor(e.getPreciseWheelRotation());
-            }
-        };
-
-        canvas.addMouseListener(adapter);
-        canvas.addMouseMotionListener(adapter);
-        canvas.addMouseWheelListener(adapter);
 
         refresh();
 
         //TODO test zoom
-
+        /*
         new Thread(() -> {
             while(true) {
                 try {
@@ -71,7 +46,7 @@ public class WindowFrontEnd extends JFrame {
                 }
             }
         }).start();
-
+        */
 
     }
 
@@ -116,6 +91,41 @@ public class WindowFrontEnd extends JFrame {
 
         this.refreshButton = new JButton("Refresh");
         this.refreshButton.addActionListener(e -> this.refresh());
+
+        MouseAdapter adapter = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mousePoint = e.getPoint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if(mousePoint != null) {
+                    moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
+                    mousePoint = e.getPoint();
+                }
+            }
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                zoomIntoByFactor(e.getPreciseWheelRotation());
+            }
+        };
+
+        canvas.addMouseListener(adapter);
+        canvas.addMouseMotionListener(adapter);
+        canvas.addMouseWheelListener(adapter);
+
+        canvas.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                connector.setImagePixelSize(canvas.getWidth(), canvas.getHeight());
+                System.out.println("Canvas resize: " + canvas.getWidth() + " " + canvas.getHeight());
+                connector.createImage();
+                canvas.setScreen(connector.getImage());
+            }
+        });
+
         createMenu();
     }
 

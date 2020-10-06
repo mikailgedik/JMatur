@@ -86,12 +86,14 @@ public abstract class CalculationResult<T extends Result> {
     /** Only creates new levels, does not delete old ones*/
     public void ensureDepth(int depth) {
         for(int i = content.size(); i <= depth; i++) {
+            System.out.print("Constructing depth " + i + "... ");
             Level<T> level = constructLevel(i);
             content.add(level);
 
             for(int j = 0; j < level.get().length; j++) {
                 level.get()[j] = constructCluster();
             }
+            System.out.println("constructed");
         }
     }
 

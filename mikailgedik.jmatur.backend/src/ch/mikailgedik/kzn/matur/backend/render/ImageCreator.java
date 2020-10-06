@@ -4,6 +4,7 @@ import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
 import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
+import ch.mikailgedik.kzn.matur.backend.connector.ScreenScaler;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.awt.*;
@@ -16,6 +17,7 @@ public class ImageCreator implements Function<Integer, Integer> {
     private ImageResult<DataMandelbrot> latestImageResult;
     /**latest params used*/
     private double minx,  maxx, miny, maxy;
+
     public ImageCreator(SettingsManager settingsManager) {
         this.settingsManager = settingsManager;
         this.buffer = new ArrayList<>();
@@ -26,28 +28,41 @@ public class ImageCreator implements Function<Integer, Integer> {
     public Screen createImage(CalculationResult.CalculationResultMandelbrot data) {
         int width = settingsManager.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = settingsManager.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
 
-        final double minx = settingsManager.getD(SettingsManager.RENDER_MINX);
-        final double maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);
-        final double miny = settingsManager.getD(SettingsManager.RENDER_MINY);
-        final double maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
+        minx = settingsManager.getD(SettingsManager.RENDER_MINX);
+        maxx = settingsManager.getD(SettingsManager.RENDER_MAXX);
+        miny = settingsManager.getD(SettingsManager.RENDER_MINY);
+        maxy = settingsManager.getD(SettingsManager.RENDER_MAXY);
 
-        double piDenX = width / (maxx - minx);
-        double piDenY = height / (maxy - miny);
+        int reqDepth = reqDepth(width, height, data);
 
-        int requiredDepthX = (int)Math.ceil(Math.log(piDenX * data.getWidth())/Math.log(data.getTiles()));
-        int requiredDepthY = (int)Math.ceil(Math.log(piDenY * data.getHeight())/Math.log(data.getTiles()));
+        this.latestImageResult = createImageResult(reqDepth, data);
+        Screen ret = getLatestScreen();
 
-        int reqDepth = Math.max(requiredDepthX, requiredDepthY);
+        assert ret.getWidth() >= width;
+        assert ret.getHeight() >= height;
+        assert ret.getWidth() < width * data.getTiles() || ret.getHeight() < height * data.getTiles();
 
-        this.latestImageResult = createImageResult(minx, maxx, miny, maxy, reqDepth, data);
-        this.minx = minx;
-        this.miny = miny;
-        this.maxx = maxx;
-        this.maxy = maxy;
-        return getLatestScreen();
+        return ret;
     }
 
-    private ImageResult<DataMandelbrot> createImageResult(double minx, double maxx, double miny, double maxy, int depth, CalculationResult.CalculationResultMandelbrot data) {
+    private int reqDepth(int pixelW, int pixelH, CalculationResult.CalculationResultMandelbrot data) {
+        //TODO better way to find reqDepth
+        double pixelSizeW = (maxx - minx) / pixelW;
+        double pixelSizeH = (maxy - miny) / pixelH;
+        double pixelSizeDataW = data.getWidth();
+        double pixelSizeDataH = data.getHeight();
+        int depthW = 0;
+        int depthH = 0;
+        while((pixelSizeDataW /= data.getTiles()) > pixelSizeW) {
+            depthW++;
+        }
+        while((pixelSizeDataH /= data.getTiles()) > pixelSizeH) {
+            depthH++;
+        }
+        return Math.max(depthH, depthW);
+    }
+
+    private ImageResult<DataMandelbrot> createImageResult(int depth, CalculationResult.CalculationResultMandelbrot data) {
         ArrayList<CalculationResult.Level<DataMandelbrot>> levels = data.getLevels();
 
         if(levels.size() <= depth) {

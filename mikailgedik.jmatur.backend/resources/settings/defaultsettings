@@ -13,8 +13,8 @@ double.setting.render.maxX=2
 double.setting.render.minY=-2
 double.setting.render.maxY=2
 #Height and Width of image
-int.setting.render.imageWidth=10
-int.setting.render.imageHeight=10
+int.setting.render.imageWidth=100
+int.setting.render.imageHeight=100
 #Default zoom factor
 double.setting.render.zoomFactor=0.5
 #------------------------------------------------
