@@ -6,20 +6,20 @@ import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MandelbrotCalculator {
+public class OldMandelbrotCalculator {
     private final SettingsManager sm;
-    private CalculationResult.CalculationResultMandelbrot result;
+    private OldCalculationResult.CalculationResultMandelbrot result;
     private ExecutorService executorService;
 
     private int maxIter;
     private int maxDepth;
     private AtomicInteger threadCounter;
 
-    public MandelbrotCalculator(SettingsManager settingsManager) {
+    public OldMandelbrotCalculator(SettingsManager settingsManager) {
         this.sm = settingsManager;
     }
 
-    public CalculationResult.CalculationResultMandelbrot calculateBase() {
+    public OldCalculationResult.CalculationResultMandelbrot calculateBase() {
         long t = System.currentTimeMillis();
 
         initServices();
@@ -34,7 +34,7 @@ public class MandelbrotCalculator {
         double miny = sm.getD(SettingsManager.CALCULATION_MINY);
         double maxy = sm.getD(SettingsManager.CALCULATION_MAXY);
 
-        result = new CalculationResult.CalculationResultMandelbrot(new double[]{minx, maxx}, new double[]{miny, maxy}, tiles);
+        result = new OldCalculationResult.CalculationResultMandelbrot(new double[]{minx, maxx}, new double[]{miny, maxy}, tiles);
 
         System.out.println("Init time: " + (System.currentTimeMillis() - t) + "ms");
         t = System.currentTimeMillis();
@@ -42,8 +42,8 @@ public class MandelbrotCalculator {
         result.ensureDepth(maxDepth);
 
         for(int i = 0; i <= maxDepth; i++) {
-            CalculationResult.Level<DataMandelbrot> l = result.getLevel(i);
-            for(int j = 0; j < l.get().length; j++) {
+            OldCalculationResult.Level<DataMandelbrot> l = result.getLevel(i);
+            for(int j = 0; j < l.totalElements(); j++) {
                 executorService.submit(new ThreadCalculator(i, j));
             }
         }

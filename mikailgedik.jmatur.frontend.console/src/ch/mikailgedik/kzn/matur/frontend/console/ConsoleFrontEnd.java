@@ -13,7 +13,7 @@ public class ConsoleFrontEnd {
     private DecimalFormat format;
 
     public ConsoleFrontEnd() {
-        this.connector = new Connector();
+        this.connector = new Connector(null);
         format = new DecimalFormat("00000");
     }
 

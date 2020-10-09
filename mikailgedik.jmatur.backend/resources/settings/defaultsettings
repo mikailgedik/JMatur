@@ -30,7 +30,7 @@ int.setting.calculation.maxThreads=6
 #First default init cluster depth
 int.setting.calculation.cluster.depth=2
 #Cluster tiles
-int.setting.calculation.cluster.tiles=8
+int.setting.calculation.cluster.tiles=4
 #Max time given to threadpool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000
 #--------------------------------------------------

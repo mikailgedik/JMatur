@@ -1,24 +1,22 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
 import ch.mikailgedik.kzn.matur.backend.calculator.Result;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
-import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ImageResult<T extends Result> {
     private final int depth, clustersX, clustersY, startXCluster, startYCluster;
     private final Screen screen, source;
-    private final CalculationResult<T> calculationResult;
+    private final OldCalculationResult<T> calculationResult;
     private final double startX, startY, width, height;
     private final Function<Integer, Integer> colorFunction;
     private boolean complete;
 
 
-    public ImageResult(int startXCluster, int startYCluster, int clustersX, int clustersY, int depth, CalculationResult<T> calculationResult, Function<Integer, Integer> colorFunction) {
+    public ImageResult(int startXCluster, int startYCluster, int clustersX, int clustersY, int depth, OldCalculationResult<T> calculationResult, Function<Integer, Integer> colorFunction) {
         this.depth = depth;
 
         this.startXCluster = startXCluster;
@@ -44,7 +42,7 @@ public class ImageResult<T extends Result> {
 
     public boolean populate() {
         boolean complete = true;
-        CalculationResult.Level<T> l = calculationResult.getLevel(depth);
+        OldCalculationResult.Level<T> l = calculationResult.getLevel(depth);
         int cX, cY;
         for(int x = 0; x < clustersX; x++) {
             cX = (x + startXCluster);
@@ -66,12 +64,12 @@ public class ImageResult<T extends Result> {
                 if(source.getPixel(x, y) == this.depth) {
                     continue;
                 }
-                T[] cluster = l.get()[cX + l.getSize() * cY];
+                T[] cluster = l.getAt(cX + l.getSize() * cY);
                 if(cluster[0] == null) {
                     //Cluster not yet calculated
                     int tmpDepth = depth, tmpcX = cX, tmpcY = cY;
                     int valuePosX, valuePosY;
-                    CalculationResult.Level<T> tmpL;
+                    OldCalculationResult.Level<T> tmpL;
                     do {
                         tmpDepth--;
                         tmpL = calculationResult.getLevel(tmpDepth);
@@ -81,7 +79,7 @@ public class ImageResult<T extends Result> {
 
                         tmpcX /= calculationResult.getTiles();
                         tmpcY /= calculationResult.getTiles();
-                        cluster = tmpL.get()[tmpcX + tmpL.getSize() * tmpcY];
+                        cluster = tmpL.getAt(tmpcX + tmpL.getSize() * tmpcY);
                     } while(cluster[0] == null);
 
                     int index = valuePosX + valuePosY * calculationResult.getTiles();
@@ -162,7 +160,7 @@ public class ImageResult<T extends Result> {
         return height;
     }
 
-    public CalculationResult<T> getCalculationResult() {
+    public OldCalculationResult<T> getCalculationResult() {
         return calculationResult;
     }
 

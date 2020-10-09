@@ -1,10 +1,9 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
 import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
-import ch.mikailgedik.kzn.matur.backend.connector.ScreenScaler;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.awt.*;
@@ -25,7 +24,7 @@ public class ImageCreator implements Function<Integer, Integer> {
         //TODO
     }
 
-    public Screen createImage(CalculationResult.CalculationResultMandelbrot data) {
+    public Screen createImage(OldCalculationResult.CalculationResultMandelbrot data) {
         int width = settingsManager.getI(SettingsManager.RENDER_IMAGE_WIDTH), height = settingsManager.getI(SettingsManager.RENDER_IMAGE_HEIGHT);
 
         minx = settingsManager.getD(SettingsManager.RENDER_MINX);
@@ -45,7 +44,7 @@ public class ImageCreator implements Function<Integer, Integer> {
         return ret;
     }
 
-    private int reqDepth(int pixelW, int pixelH, CalculationResult.CalculationResultMandelbrot data) {
+    private int reqDepth(int pixelW, int pixelH, OldCalculationResult.CalculationResultMandelbrot data) {
         //TODO better way to find reqDepth
         double pixelSizeW = (maxx - minx) / pixelW;
         double pixelSizeH = (maxy - miny) / pixelH;
@@ -62,14 +61,14 @@ public class ImageCreator implements Function<Integer, Integer> {
         return Math.max(depthH, depthW);
     }
 
-    private ImageResult<DataMandelbrot> createImageResult(int depth, CalculationResult.CalculationResultMandelbrot data) {
-        ArrayList<CalculationResult.Level<DataMandelbrot>> levels = data.getLevels();
+    private ImageResult<DataMandelbrot> createImageResult(int depth, OldCalculationResult.CalculationResultMandelbrot data) {
+        ArrayList<OldCalculationResult.Level<DataMandelbrot>> levels = data.getLevels();
 
         if(levels.size() <= depth) {
             data.ensureDepth(depth);
         }
 
-        CalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
+        OldCalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
         double chunkWidth = data.getWidth() / l.getSize(), chunkHeight = data.getHeight() / l.getSize();
 
         int clustersX = (int) Math.ceil((maxx - minx) / chunkWidth);

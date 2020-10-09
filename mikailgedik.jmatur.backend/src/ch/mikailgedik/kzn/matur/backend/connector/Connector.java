@@ -1,8 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
-import ch.mikailgedik.kzn.matur.backend.calculator.MandelbrotCalculator;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldMandelbrotCalculator;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
@@ -12,8 +11,8 @@ import java.util.TreeMap;
 /** This class connects the frontend with the backend */
 public class Connector {
     private final SettingsManager settingsManager;
-    private final MandelbrotCalculator calculator;
-    private CalculationResult.CalculationResultMandelbrot calculationResult;
+    private final OldMandelbrotCalculator calculator;
+    private OldCalculationResult.CalculationResultMandelbrot calculationResult;
     private final ImageCreator imageCreator;
     private Screen image;
 
@@ -24,7 +23,7 @@ public class Connector {
         image = null;
 
         settingsManager = SettingsManager.createDefaultSettingsManager();
-        calculator = new MandelbrotCalculator(settingsManager);
+        calculator = new OldMandelbrotCalculator(settingsManager);
         imageCreator = new ImageCreator(settingsManager);
         this.listener = listener;
     }
