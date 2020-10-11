@@ -42,7 +42,7 @@ public class OldMandelbrotCalculator {
         result.ensureDepth(maxDepth);
 
         for(int i = 0; i <= maxDepth; i++) {
-            OldCalculationResult.Level<DataMandelbrot> l = result.getLevel(i);
+            OldCalculationResult.Level<OldDataMandelbrot> l = result.getLevel(i);
             for(int j = 0; j < l.totalElements(); j++) {
                 executorService.submit(new ThreadCalculator(i, j));
             }
@@ -67,7 +67,7 @@ public class OldMandelbrotCalculator {
         return result;
     }
 
-    public void addTargetsFromImageResult(ImageResult<DataMandelbrot> imageResult) {
+    public void addTargetsFromImageResult(ImageResult<OldDataMandelbrot> imageResult) {
         initServices();
         result.ensureDepth(imageResult.getDepth());
         int maxWaitTime = sm.getI(SettingsManager.CALCULATION_MAX_WAITING_TIME_THREADS);
@@ -122,12 +122,12 @@ public class OldMandelbrotCalculator {
 
             try {
                 long t = System.currentTimeMillis();
-                DataMandelbrot[] data = result.getCluster(depth, cluster);
+                OldDataMandelbrot[] data = result.getCluster(depth, cluster);
 
                 double[] v;
                 for(int i = 0; i < data.length; i++) {
                     v = result.centerCoordinates(depth, cluster, i);
-                    data[i] = new DataMandelbrot(v[0], v[1], calc(v[0], v[1]));
+                    data[i] = new OldDataMandelbrot(v[0], v[1], calc(v[0], v[1]));
                 }
 
 

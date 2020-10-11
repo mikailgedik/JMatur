@@ -2,6 +2,6 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import java.util.function.Function;
 
-public interface Result {
+public interface OldResult {
     int getValue();
 }

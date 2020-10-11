@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class OldCalculationResult<T extends Result> {
+public abstract class OldCalculationResult<T extends OldResult> {
     private final int tiles;
     private final double width, height, startX, startY;
 
@@ -13,7 +13,7 @@ public abstract class OldCalculationResult<T extends Result> {
      * */
     private final ArrayList<Level<T>> content;
 
-    public static abstract class Level<T extends Result> {
+    public static abstract class Level<T extends OldResult> {
         private final int depth;
         private final int size;
 
@@ -87,7 +87,7 @@ public abstract class OldCalculationResult<T extends Result> {
 
 
 
-    private static class AbsoluteLevel<T extends Result> extends Level<T> {
+    private static class AbsoluteLevel<T extends OldResult> extends Level<T> {
         private final T[][] content;
 
         public AbsoluteLevel(int depth, int size, T[][] content) {
@@ -214,19 +214,19 @@ public abstract class OldCalculationResult<T extends Result> {
         return getLevel(depth).getAt(cluster);
     }
 
-    public static class CalculationResultMandelbrot extends OldCalculationResult<DataMandelbrot> {
+    public static class CalculationResultMandelbrot extends OldCalculationResult<OldDataMandelbrot> {
         public CalculationResultMandelbrot(double[] xBounds, double[] yBounds, int tiles) {
             super(xBounds, yBounds, tiles);
         }
 
         @Override
-        protected DataMandelbrot[][] createLevel(int arraySize) {
-            return new DataMandelbrot[arraySize][];
+        protected OldDataMandelbrot[][] createLevel(int arraySize) {
+            return new OldDataMandelbrot[arraySize][];
         }
 
         @Override
-        protected DataMandelbrot[] constructCluster() {
-            return new DataMandelbrot[length()];
+        protected OldDataMandelbrot[] constructCluster() {
+            return new OldDataMandelbrot[length()];
         }
     }
 

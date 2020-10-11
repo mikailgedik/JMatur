@@ -1,13 +1,13 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.Result;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldResult;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ImageResult<T extends Result> {
+public class ImageResult<T extends OldResult> {
     private final int depth, clustersX, clustersY, startXCluster, startYCluster;
     private final Screen screen, source;
     private final OldCalculationResult<T> calculationResult;

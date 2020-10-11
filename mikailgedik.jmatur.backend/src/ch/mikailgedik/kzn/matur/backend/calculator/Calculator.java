@@ -1,12 +1,12 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-public abstract class Calculator {
+import ch.mikailgedik.kzn.matur.backend.data.Cluster;
+import ch.mikailgedik.kzn.matur.backend.data.DataAcceptor;
+import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
-    public Calculator() {
+public class Calculator<T extends Value> extends DataAcceptor<T> {
+    @Override
+    public void accept(Cluster<T> t, double startX, double startY) {
+
     }
-
-    public abstract void calculateBase();
-
-    public abstract void calculateArea
-            (double xstart, double xend, double ystart, double yend, double precision);
 }

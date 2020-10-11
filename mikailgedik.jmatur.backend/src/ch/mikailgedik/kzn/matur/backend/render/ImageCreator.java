@@ -1,7 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.DataMandelbrot;
+import ch.mikailgedik.kzn.matur.backend.calculator.OldDataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
@@ -12,8 +12,8 @@ import java.util.function.Function;
 
 public class ImageCreator implements Function<Integer, Integer> {
     private SettingsManager settingsManager;
-    private ArrayList<ImageResult<DataMandelbrot>> buffer;
-    private ImageResult<DataMandelbrot> latestImageResult;
+    private ArrayList<ImageResult<OldDataMandelbrot>> buffer;
+    private ImageResult<OldDataMandelbrot> latestImageResult;
     /**latest params used*/
     private double minx,  maxx, miny, maxy;
 
@@ -61,14 +61,14 @@ public class ImageCreator implements Function<Integer, Integer> {
         return Math.max(depthH, depthW);
     }
 
-    private ImageResult<DataMandelbrot> createImageResult(int depth, OldCalculationResult.CalculationResultMandelbrot data) {
-        ArrayList<OldCalculationResult.Level<DataMandelbrot>> levels = data.getLevels();
+    private ImageResult<OldDataMandelbrot> createImageResult(int depth, OldCalculationResult.CalculationResultMandelbrot data) {
+        ArrayList<OldCalculationResult.Level<OldDataMandelbrot>> levels = data.getLevels();
 
         if(levels.size() <= depth) {
             data.ensureDepth(depth);
         }
 
-        OldCalculationResult.Level<DataMandelbrot> l = data.getLevel(depth);
+        OldCalculationResult.Level<OldDataMandelbrot> l = data.getLevel(depth);
         double chunkWidth = data.getWidth() / l.getSize(), chunkHeight = data.getHeight() / l.getSize();
 
         int clustersX = (int) Math.ceil((maxx - minx) / chunkWidth);
@@ -79,14 +79,14 @@ public class ImageCreator implements Function<Integer, Integer> {
         startXCluster = (int) ((minx - data.getStartX()) / data.getWidth() * l.getSize());
         startYCluster = (int) ((miny - data.getStartY()) / data.getHeight() * l.getSize());
 
-        for(ImageResult<DataMandelbrot> ir: buffer) {
+        for(ImageResult<OldDataMandelbrot> ir: buffer) {
             if(ir.getStartXCluster() == startXCluster && ir.getStartYCluster() == startYCluster &&
             clustersX == ir.getClustersX() && clustersY == ir.getClustersY() && depth == ir.getDepth() && data == ir.getCalculationResult()) {
                 return ir;
             }
         }
 
-        ImageResult<DataMandelbrot> ret =
+        ImageResult<OldDataMandelbrot> ret =
                 new ImageResult<>(startXCluster, startYCluster, clustersX, clustersY,
                         depth, data, this);
 
@@ -133,7 +133,7 @@ public class ImageCreator implements Function<Integer, Integer> {
         return Color.HSBtoRGB((float) (log/max),1, 1) & 0xffffff;
     }
 
-    public ImageResult<DataMandelbrot> getLatestImageResult() {
+    public ImageResult<OldDataMandelbrot> getLatestImageResult() {
         return latestImageResult;
     }
 }
