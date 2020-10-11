@@ -5,6 +5,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -181,8 +182,36 @@ public abstract class DataSet<T extends Value> {
 
     protected abstract T[] createArray(int length);
 
+    public LogicalRegion dataGetLogicalRegion(Region region, double minPrecision) {
+        int depth = levelCalculateLevelWithMinPrecision(minPrecision);
+        Level<T> l = getLevels().get(depth);
+
+        int clustersInX = (int)Math.ceil(region.getWidth()/levelCalculateAbsoluteClusterWidthAtDepth(depth));
+        int clustersInY = (int)Math.ceil(region.getHeight()/levelCalculateAbsoluteClusterHeightAtDepth(depth));
+
+        //Walk through necessary clusters
+        int[] firstCluster = levelCalculateFirstMatchingCluster(depth, region.getStartX(), region.getStartY());
+        int[] end = new int[] {firstCluster[0] + clustersInX, firstCluster[1] + clustersInY};
+
+        if(firstCluster[0] < 0) {
+            firstCluster[0] = 0;
+        }
+        if(firstCluster[1] < 0) {
+            firstCluster[1] = 0;
+        }
+        if(end[0] > l.getLogicalWidth()) {
+            end[0] = l.getLogicalWidth();
+        }
+        if(end[1] > l.getLogicalHeight()) {
+            end[1] = l.getLogicalHeight();
+        }
+
+        return new LogicalRegion(firstCluster[0], firstCluster[1], end[0], end[1], depth);
+    }
+
     public void iterateOverRegion(Region region, double minPrecision, DataAcceptor<T> function) {
-        int depth = getLevelWithMinPrecision(minPrecision);
+        //TODO implement dataGetLogicalRegion() call instead of duplicated code
+        int depth = levelCalculateLevelWithMinPrecision(minPrecision);
         ensureLevelWithDepth(depth);
         Level<T> l = getLevels().get(depth);
 
@@ -223,7 +252,7 @@ public abstract class DataSet<T extends Value> {
     }
 
     public CalculableArea<T> createCalculableArea(Region region, double minPrecision) {
-        int depth = getLevelWithMinPrecision(minPrecision);
+        int depth = levelCalculateLevelWithMinPrecision(minPrecision);
         ensureLevelWithDepth(depth);
         Level<T> l = getLevels().get(depth);
         ArrayList<Cluster<T>> list = new ArrayList<>();
@@ -289,7 +318,7 @@ public abstract class DataSet<T extends Value> {
                 (depth, levelGetPrecisionAtDepth(depth), list);
     }
 
-    private int getLevelWithMinPrecision(double precision) {
+    public int levelCalculateLevelWithMinPrecision(double precision) {
         int depth = (int) Math.ceil(Math.log(firstLevelPrecision / precision) / Math.log(clusterFactor));
         assert levelCalculatePrecisionAtDepth(depth) <= precision;
         return depth;
@@ -356,12 +385,18 @@ public abstract class DataSet<T extends Value> {
         CalculableArea<ValueMandelbrot> area = d.createCalculableArea(
                 new Region(-1, -1, 1, 1),
                 0.001);
-        calc.calculate(area, d, 12);
+        calc.calculate(area, d, 24);
         d.returnCalculableArea(area);
         depth = area.getDepth();
-
+        System.out.println(depth);
         System.out.println("Time: " + (System.currentTimeMillis() - t));
+        t = System.currentTimeMillis();
 
+        ImageCreator<ValueMandelbrot> creator = new ImageCreator<>(d, ImageCreator.MANDELBROT_COLOR_FUNCTION);
+
+        Screen s = creator.createScreen(2000, 2000, new Region(-1,-1,1,1));
+
+        /*
         Screen s = new Screen(d.getLevels().get(depth).getLogicalWidth() * d.logicClusterWidth,
                 d.getLevels().get(depth).getLogicalHeight() * d.logicClusterHeight, 0xff00ff);
         DataAcceptor<ValueMandelbrot> ac = new DataAcceptor<>() {
@@ -378,6 +413,8 @@ public abstract class DataSet<T extends Value> {
         };
 
         d.iterateOverRegion(new Region(-1, -1, 1, 1), 0.001, ac);
+        */
         FileManager.getFileManager().saveImage("/home/mikail/Desktop/File.png", s);
+        System.out.println("Time: " + (System.currentTimeMillis() - t));
     }
 }
