@@ -1,12 +1,12 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
+import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 
 
@@ -154,7 +154,7 @@ public abstract class DataSet<T extends Value> {
 
     /** ensures the all levels with the depth up to and including the parameter exist*/
     public void ensureLevelWithDepth(int depth) {
-        assert depth > 0;
+        assert depth > -1;
         Level<T> prev = levels.get(levels.size() - 1);
         for(int i = levels.size(); i <= depth; i++) {
             levels.add(prev = new Level<>(i, prev.getLogicalWidth() * clusterFactor,
@@ -210,14 +210,14 @@ public abstract class DataSet<T extends Value> {
         if(clustersInX < 1 || clustersInY < 1) {
             System.out.println("[WARNING]Iterating area with no clusters");
         }
+
         function.setPrecision(levelGetPrecisionAtDepth(depth));
 
         //TODO walk through sorted list more efficiently
         for(Cluster<T> c: l.getClusters()) {
             int x = c.getId() % l.getLogicalWidth(), y = c.getId() / l.getLogicalWidth();
             if(firstCluster[0] <= x && x < end[0] && firstCluster[1] <= y && y < end[1]) {
-                double[] coordinates = levelGetStartCoordinatesOfCluster(depth, c.getId());
-                function.accept(c, coordinates[0], coordinates[1]);
+                function.accept(c, x, y);
             }
         }
     }
@@ -344,76 +344,40 @@ public abstract class DataSet<T extends Value> {
     }
 
     public static void main(String ... args) {
-        DataSet<ValueMandelbrot> d =  createDataSet(10, 10, 1,
-                1, 4, 0, 0, 1, 3000);
-
+        DataSet<ValueMandelbrot> d =  createDataSet(100, 100, 1,
+                1, 4, -1, -1, 2, 3000);
         d.ensureLevelWithDepth(10);
 
         int depth=0;
 
-        {
-            CalculableArea<ValueMandelbrot> area = d.createCalculableArea(
-                    new Region(0, 0, .6, .6),
-                    0.01);
-            testCalc(d, area);
-            d.returnCalculableArea(area);
-            depth = area.getDepth();
-        }
+        long t = System.currentTimeMillis();
 
-        {
-            CalculableArea<ValueMandelbrot> area = d.createCalculableArea(
-                    new Region(.4, .4, 1, 1),
-                    0.01);
-            testCalc(d, area);
-            d.returnCalculableArea(area);
-        }
+        CalculatorMandelbrot calc = new CalculatorMandelbrot();
+        CalculableArea<ValueMandelbrot> area = d.createCalculableArea(
+                new Region(-1, -1, 1, 1),
+                0.001);
+        calc.calculate(area, d, 12);
+        d.returnCalculableArea(area);
+        depth = area.getDepth();
 
-        d.getLevels().get(2).getClusters().removeIf(e -> Math.random() > .7);
+        System.out.println("Time: " + (System.currentTimeMillis() - t));
 
-        int finalDepth = depth;
+        Screen s = new Screen(d.getLevels().get(depth).getLogicalWidth() * d.logicClusterWidth,
+                d.getLevels().get(depth).getLogicalHeight() * d.logicClusterHeight, 0xff00ff);
         DataAcceptor<ValueMandelbrot> ac = new DataAcceptor<>() {
-            final Screen s = new Screen(d.getLevels().get(finalDepth).getLogicalWidth() * d.logicClusterWidth,
-                    d.getLevels().get(finalDepth).getLogicalHeight() * d.logicClusterHeight, 0xff00ff);
+            final int logicClusterWidth = d.getLogicClusterWidth(), logicClusterHeight = d.getLogicClusterHeight();
             @Override
-            public void accept(Cluster<ValueMandelbrot> t, double startX, double startY) {
-                for(int y = 0; y < 10; y++) {
-                    for(int x = 0; x < 10; x++) {
-                        s.setPixel((int)((startX + x * d.getLevels().get(2).getPrecision()) * 16 * 10),
-                                (int)((startY+y* d.getLevels().get(2).getPrecision()) * 16 * 10), t.getValue()[x + y *10].getValue() == -1 ? 0xffffff:0x0);
+            public void accept(Cluster<ValueMandelbrot> t, int clusterX, int clusterY) {
+                int xOff = clusterX * logicClusterWidth, yOff = clusterY * logicClusterHeight;
+                for(int y = 0; y < logicClusterWidth; y++) {
+                    for(int x = 0; x < logicClusterHeight; x++) {
+                        assert s.setPixel(xOff + x,yOff + y, t.getValue()[x + y * logicClusterWidth].getValue() == -1 ? 0xffffff: 0x0);
                     }
                 }
-
-                FileManager.getFileManager().saveImage("/home/mikail/Desktop/File.png", s);
-
             }
         };
 
-        d.iterateOverRegion(new Region(-1, -1, 1, 1), 0.01, ac);
-    }
-
-    static void testCalc(DataSet<ValueMandelbrot> d, CalculableArea<ValueMandelbrot> area) {
-        for(Cluster<ValueMandelbrot> c: area) {
-            for(int y = 0; y < d.logicClusterHeight; y++) {
-                for(int x = 0; x < d.logicClusterWidth; x++) {
-                    double[] i = d.valueGetCenterCoordinates(area.getDepth(), c.getId(), x + y * d.logicClusterWidth);
-                    c.getValue()[x + y * d.logicClusterWidth] =
-                            new ValueMandelbrot(calc(i[0], i[1]));
-                }
-            }
-        }
-    }
-
-    static int calc(double x, double y) {
-        double a = 0, b = 0, ta, tb;
-        for(int i = 0; i < 3000; ++i) {
-            ta = a*a - b*b + x;
-            tb = 2 * a * b + y;
-            a = ta;
-            b = tb;
-            if(a*a + b*b > 4) {
-                return i;
-            }
-        }
-        return -1;
+        d.iterateOverRegion(new Region(-1, -1, 1, 1), 0.001, ac);
+        FileManager.getFileManager().saveImage("/home/mikail/Desktop/File.png", s);
     }
 }

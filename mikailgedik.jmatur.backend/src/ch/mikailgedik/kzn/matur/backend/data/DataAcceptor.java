@@ -9,7 +9,7 @@ public abstract class DataAcceptor<T extends Value> {
         this.precision = 0;
     }
 
-    public abstract void accept(Cluster<T> t, double startX, double startY);
+    public abstract void accept(Cluster<T> t, int clusterX, int clusterY);
 
     public double getPrecision() {
         return precision;

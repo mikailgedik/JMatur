@@ -1,7 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.OldResult;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import java.util.function.Consumer;

@@ -1,7 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.OldCalculationResult;
-import ch.mikailgedik.kzn.matur.backend.calculator.OldDataMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;

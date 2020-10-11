@@ -7,7 +7,6 @@ import java.util.Iterator;
 
 public class CalculableArea<T extends Value> implements Iterable<Cluster<T>> {
     private final int depth;
-    //Actually already known by the level and depth
     private final double precision;
     private final ArrayList<Cluster<T>> clusters;
 
