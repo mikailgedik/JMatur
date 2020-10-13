@@ -31,6 +31,7 @@ public class CalculatorMandelbrot {
         try {
             service.awaitTermination(maxWaitingTime, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
+            //TODO correct behaviour when InterruptedException is thrown?
             service.shutdownNow();
             Thread.currentThread().interrupt();
         } finally {

@@ -1,7 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
-import ch.mikailgedik.kzn.matur.backend.connector.ScreenScaler;
 import ch.mikailgedik.kzn.matur.backend.data.*;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
@@ -12,7 +11,6 @@ public class ImageCreator<T extends Value> {
     private DataSet<T> dataSet;
     private ImageResult<T> imageResult;
     private ArrayList<ImageResult<T>> buffer;
-    private ScreenScaler screenScaler;
 
     public ImageCreator(DataSet<T> dataSet, ColorFunction<T> colorFunction) {
         this.colorFunction = colorFunction;
@@ -21,7 +19,7 @@ public class ImageCreator<T extends Value> {
     }
 
     /** Does not scale the images down to minPixelWidth and minPixelHeight, but guarantees that the returned Screen has always bigger dimensions*/
-    public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region) {
+    public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region, int threads, long maxWaitingTime) {
         //TODO buffer image results to avoid creating same images over and over
         //Only cropping has to be done anew
 
@@ -41,7 +39,7 @@ public class ImageCreator<T extends Value> {
         }
 
         if(create) {
-            imageResult.create();
+            imageResult.create(threads, maxWaitingTime);
             buffer.add(imageResult);
         }
 

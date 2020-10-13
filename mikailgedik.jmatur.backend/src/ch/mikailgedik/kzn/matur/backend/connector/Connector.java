@@ -66,6 +66,8 @@ public class Connector {
     public synchronized void createImage() {
         int w = settingsManager.getI(Constants.RENDER_IMAGE_WIDTH);
         int h = settingsManager.getI(Constants.RENDER_IMAGE_HEIGHT);
+        int threads = settingsManager.getI(Constants.CALCULATION_MAX_THREADS);
+        long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
         double[] c = settingsManager.getRenderConstraints();
 
         Region region = new Region(c[0], c[2], c[1], c[3]);
@@ -73,11 +75,11 @@ public class Connector {
         CalculableArea<ValueMandelbrot> area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
 
         if(!area.getClusters().isEmpty()) {
-            calculatorMandelbrot.calculate(area, dataSet, settingsManager.getI(Constants.CALCULATION_MAX_THREADS), settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS));
+            calculatorMandelbrot.calculate(area, dataSet, threads, maxWaitingTime);
             dataSet.returnCalculableArea(area);
         }
 
-        image = imageCreator.createScreen(w, h, region);
+        image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
     }
 
     public Screen getImage() {
