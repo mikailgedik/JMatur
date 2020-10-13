@@ -6,6 +6,7 @@ import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.render.ColorFunction;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
@@ -23,9 +24,19 @@ public class Connector {
         image = null;
 
         settingsManager = SettingsManager.createDefaultSettingsManager();
-        dataSet = DataSet.createDataSet(128, 128, 1, 1, 4, -2, -2, 4, 3000);
+        dataSet = DataSet.createDataSet(
+                settingsManager.getI(Constants.DATA_LOGIC_CLUSTER_WIDTH),
+                settingsManager.getI(Constants.DATA_LOGIC_CLUSTER_HEIGHT),
+                settingsManager.getI(Constants.DATA_START_LOGIC_LEVEL_WIDTH),
+                settingsManager.getI(Constants.DATA_START_LOGIC_LEVEL_HEIGHT),
+                settingsManager.getI(Constants.DATA_CLUSTER_FACTOR),
+                settingsManager.getI(Constants.DATA_REGION_START_X),
+                settingsManager.getI(Constants.DATA_REGION_START_Y),
+                settingsManager.getI(Constants.DATA_REGION_WIDTH),
+                settingsManager.getI(Constants.CALCULATION_START_ITERATION),
+                DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
         calculatorMandelbrot = new CalculatorMandelbrot();
-        imageCreator = new ImageCreator<>(dataSet, ImageCreator.MANDELBROT_COLOR_FUNCTION_HSB);
+        imageCreator = new ImageCreator<>(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
     }
 
     public Object getSetting(String name) {
@@ -62,7 +73,7 @@ public class Connector {
         CalculableArea<ValueMandelbrot> area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
 
         if(!area.getClusters().isEmpty()) {
-            calculatorMandelbrot.calculate(area, dataSet, settingsManager.getI(Constants.CALCULATION_MAX_THREADS));
+            calculatorMandelbrot.calculate(area, dataSet, settingsManager.getI(Constants.CALCULATION_MAX_THREADS), settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS));
             dataSet.returnCalculableArea(area);
         }
 
@@ -99,7 +110,6 @@ public class Connector {
         bounds[1] = midX + dx;
         bounds[2] = midY - dy;
         bounds[3] = midY + dy;
-
 
         settingsManager.setRenderConstraints(bounds);
     }

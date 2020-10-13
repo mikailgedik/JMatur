@@ -20,16 +20,16 @@ public class CalculatorMandelbrot {
     }
 
 
-    public void calculate(CalculableArea<ValueMandelbrot> area, DataSet<ValueMandelbrot> dataSet, int t) {
+    public void calculate(CalculableArea<ValueMandelbrot> area, DataSet<ValueMandelbrot> dataSet, int threads, long maxWaitingTime) {
         currentDataSet = dataSet;
         this.area = area;
-        prepare(t);
+        prepare(threads);
 
         area.forEach(c -> service.submit(new MT(c)));
         service.shutdown();
 
         try {
-            service.awaitTermination(100000, TimeUnit.MILLISECONDS);
+            service.awaitTermination(maxWaitingTime, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             service.shutdownNow();
             Thread.currentThread().interrupt();

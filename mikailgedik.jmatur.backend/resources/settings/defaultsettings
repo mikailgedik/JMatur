@@ -5,7 +5,7 @@ string.value.version=Java 0.0.3
 ###FILE SETTINGS
 #default file when exporting image
 string.file.defaultOutputFile=
-#------------------------------------------------
+#------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range
 double.setting.render.minX=-2
@@ -16,21 +16,26 @@ double.setting.render.maxY=2
 int.setting.render.imageWidth=100
 int.setting.render.imageHeight=100
 #Default zoom factor
-double.setting.render.zoomFactor=0.5
-#------------------------------------------------
+double.setting.render.zoomFactor=0.1
+string.setting.render.colorFunction=mandelbrotHSB
+#------------------------------------------------------------------
 ###CALCUTION SETTINGS
-double.setting.calculation.minX=-2
-double.setting.calculation.maxX=2
-double.setting.calculation.minY=-2
-double.setting.calculation.maxY=2
-#Max iterations per render point
-int.setting.calculation.maxIterations=3000
+#Max iterations per render point for the first level
+int.setting.calculation.startIterations=3000
+string.setting.calculation.iterationModel=static
 #Max CPU threads
 int.setting.calculation.maxThreads=6
 #First default init cluster depth
-int.setting.calculation.cluster.depth=2
-#Cluster tiles
-int.setting.calculation.cluster.tiles=4
-#Max time given to threadpool to wait for threads to terminate (in milliseconds)
+#Max time given to thread pool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000
-#--------------------------------------------------
+#------------------------------------------------------------------
+###DATA SETTINGS
+int.setting.data.logicClusterWidth=128
+int.setting.data.logicClusterHeight=128
+int.setting.data.startLogicLevelWidth=1
+int.setting.data.startLogicLevelHeight=1
+int.setting.data.clusterFactor=4
+int.setting.data.regionStartX=-2
+int.setting.data.regionStartY=-2
+int.setting.data.regionWidth=4
+#------------------------------------------------------------------

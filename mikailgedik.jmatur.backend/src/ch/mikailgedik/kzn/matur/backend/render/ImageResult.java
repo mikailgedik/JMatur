@@ -13,6 +13,7 @@ public class ImageResult<T extends Value> extends DataAcceptor<T> {
     private LogicalRegion logicalRegion;
     private Screen result;
     private Region actualRegion;
+    private int maxIterations;
 
     public ImageResult(int pixelWidth, int pixelHeight, Region region, ColorFunction<T> colorFunction, DataSet<T> dataSet) {
         this.colorFunction = colorFunction;
@@ -32,6 +33,7 @@ public class ImageResult<T extends Value> extends DataAcceptor<T> {
         logicalRegion = dataSet.dataGetUnrestrictedLogicalRegion(region, minimalPrecision);
 
         actualRegion = dataSet.dataGetRegion(logicalRegion);
+        maxIterations = dataSet.levelGetIterationsForDepth(logicalRegion.getDepth());
     }
 
     @Override
@@ -41,7 +43,8 @@ public class ImageResult<T extends Value> extends DataAcceptor<T> {
 
         for(int y = 0; y < dataSet.getLogicClusterHeight(); y++) {
             for(int x = 0; x < dataSet.getLogicClusterWidth(); x++) {
-                result.setPixel(x + xOffset, y + yOffset, colorFunction.colorOf(t.getValue()[x + y * dataSet.getLogicClusterWidth()]));
+                result.setPixel(x + xOffset, y + yOffset,
+                        colorFunction.colorOf(t.getValue()[x + y * dataSet.getLogicClusterWidth()], maxIterations));
             }
         }
     }

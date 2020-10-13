@@ -12,14 +12,19 @@ public interface Constants {
     String RENDER_IMAGE_WIDTH = "int.setting.render.imageWidth";
     String RENDER_IMAGE_HEIGHT = "int.setting.render.imageHeight";
     String RENDER_ZOOM_FACTOR = "double.setting.render.zoomFactor";
+    String RENDER_COLOR_FUNCTION = "string.setting.render.colorFunction";
 
-    String CALCULATION_MINX = "double.setting.calculation.minX";
-    String CALCULATION_MAXX = "double.setting.calculation.maxX";
-    String CALCULATION_MINY = "double.setting.calculation.minY";
-    String CALCULATION_MAXY = "double.setting.calculation.maxY";
-    String CALCULATION_MAX_ITERATIONS = "int.setting.calculation.maxIterations";
+    String CALCULATION_START_ITERATION = "int.setting.calculation.startIterations";
+    String CALCULATION_ITERATION_MODEL = "string.setting.calculation.iterationModel";
     String CALCULATION_MAX_THREADS = "int.setting.calculation.maxThreads";
     String CALCULATION_MAX_WAITING_TIME_THREADS = "int.setting.calculation.maxWaitingTimeForThread";
-    String CALCULATION_CLUSTER_INIT_DEPTH = "int.setting.calculation.cluster.depth";
-    String CALCULATION_CLUSTER_TILES = "int.setting.calculation.cluster.tiles";
+
+    String DATA_LOGIC_CLUSTER_WIDTH = "int.setting.data.logicClusterWidth";
+    String DATA_LOGIC_CLUSTER_HEIGHT = "int.setting.data.logicClusterHeight";
+    String DATA_START_LOGIC_LEVEL_WIDTH = "int.setting.data.startLogicLevelWidth";
+    String DATA_START_LOGIC_LEVEL_HEIGHT = "int.setting.data.startLogicLevelHeight";
+    String DATA_CLUSTER_FACTOR = "int.setting.data.clusterFactor";
+    String DATA_REGION_START_X = "int.setting.data.regionStartX";
+    String DATA_REGION_START_Y = "int.setting.data.regionStartY";
+    String DATA_REGION_WIDTH = "int.setting.data.regionWidth";
 }

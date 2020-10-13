@@ -16,18 +16,19 @@ public abstract class DataSet<T extends Value> {
     private final double firstLevelPrecision;
     private final int clusterFactor;
     private final Region region;
+    private final IterationModel iterationModel;
 
     /** The absolute height is calculated through the logic cluster dimensions and the start values for the logic level dimensions */
 
     public DataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor,
-                   double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel) {
+                   double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         this.levels = new ArrayList<>();
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
         this.firstLevelLogicWidth = startLogicLevelWidth;
         this.firstLevelLogicHeight = startLogicLevelHeight;
         this.clusterFactor = clusterFactor;
-
+        this.iterationModel = iterationModel;
         //Create first level
 
         double absoluteClusterWidth = regionWidth / startLogicLevelWidth;
@@ -85,7 +86,8 @@ public abstract class DataSet<T extends Value> {
     }
 
     public int levelCalculateIterationsForDepth(int depth) {
-        return levels.get(0).getIterations();
+        return iterationModel.
+                getIterations(levels.get(0).getIterations(), depth, levelCalculatePrecisionAtDepth(depth), levels.get(0).getPrecision());
     }
 
     public double[] levelCalculateStartCoordinatesOfCluster(int depth, int id) {
@@ -286,19 +288,31 @@ public abstract class DataSet<T extends Value> {
 
     public static DataSet<ValueMandelbrot> createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
                                                          int startLogicLevelHeight, int clusterFactor, double regionStartX,
-                                                         double regionStartY, double regionWidth, int iterationsForFirstLevel) {
+                                                         double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         return new DataSetMandelbrot(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor,
-                regionStartX, regionStartY, regionWidth, iterationsForFirstLevel);
+                regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
     }
 
     private static class DataSetMandelbrot extends DataSet<ValueMandelbrot> {
-        public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel) {
-            super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel);
+        public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
+            super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
         }
 
         @Override
         protected ValueMandelbrot[] createArray(int length) {
             return new ValueMandelbrot[length];
         }
+    }
+
+    public static IterationModel getIterationModelFrom(String name) {
+        return switch (name) {
+            case "static" -> (s,d,p, sp) -> s;
+            case "antiProportional" -> (s,d,p,sp) -> {
+                //TODO add setting and improve selection
+                int factor = 2;
+                return (int)(s * (sp / p));
+            };
+            default -> throw new IllegalStateException("Unexpected value: " + name);
+        };
     }
 }

@@ -52,18 +52,4 @@ public class ImageCreator<T extends Value> {
         assert cutVersion.getHeight() >= minPixelHeight;
         return cutVersion;
     }
-
-    public static final ColorFunction<ValueMandelbrot> MANDELBROT_COLOR_FUNCTION_IN_OUT =
-            (v) -> v.getValue() == -1 ? 0xffffff : 0x0;
-
-    public static final ColorFunction<ValueMandelbrot> MANDELBROT_COLOR_FUNCTION_HSB =
-            (v)->{
-                if(v.getValue() == -1) {
-                    return 0x0;
-                }
-                double max = Math.log(3000);
-                double log = Math.log(v.getValue());
-
-                return Color.HSBtoRGB((float) (log/max),1, 1) & 0xffffff;
-            };
 }
