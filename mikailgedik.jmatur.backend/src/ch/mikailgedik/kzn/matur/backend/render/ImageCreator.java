@@ -1,29 +1,54 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
+import ch.mikailgedik.kzn.matur.backend.connector.ScreenScaler;
 import ch.mikailgedik.kzn.matur.backend.data.*;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 
-import java.awt.*;
+import java.util.ArrayList;
 
 public class ImageCreator<T extends Value> {
     private ColorFunction<T> colorFunction;
     private DataSet<T> dataSet;
     private ImageResult<T> imageResult;
+    private ArrayList<ImageResult<T>> buffer;
+    private ScreenScaler screenScaler;
 
     public ImageCreator(DataSet<T> dataSet, ColorFunction<T> colorFunction) {
         this.colorFunction = colorFunction;
         this.dataSet = dataSet;
+        buffer = new ArrayList<>();
     }
 
+    /** Does not scale the images down to minPixelWidth and minPixelHeight, but guarantees that the returned Screen has always bigger dimensions*/
     public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region) {
         //TODO buffer image results to avoid creating same images over and over
         //Only cropping has to be done anew
-        imageResult = new ImageResult<>(minPixelWidth, minPixelHeight, region, colorFunction, dataSet);
-        imageResult.create();
 
+        imageResult = new ImageResult<>(minPixelWidth, minPixelHeight, region, colorFunction, dataSet);
+        boolean create = true;
+        LogicalRegion tr;
+        for(ImageResult<T> i: buffer) {
+            tr = i.getLogicalRegion();
+            if(tr.getStartX() <= imageResult.getLogicalRegion().getStartX() &&
+                    tr.getStartY() <= imageResult.getLogicalRegion().getStartY() &&
+                    tr.getEndX() >= imageResult.getLogicalRegion().getEndX() &&
+                    tr.getEndY() >= imageResult.getLogicalRegion().getEndY()) {
+                create = false;
+                imageResult = i;
+                break;
+            }
+        }
+
+        if(create) {
+            imageResult.create();
+            buffer.add(imageResult);
+        }
+
+        return getCutVersion(region);
+    }
+
+    private Screen getCutVersion(Region region) {
         Screen result = imageResult.getResult();
         Region actualRegion = imageResult.getActualRegion();
 
@@ -34,6 +59,7 @@ public class ImageCreator<T extends Value> {
                 ex = ((region.getEndX() - actualRegion.getStartX()) / actualRegion.getWidth() * result.getWidth()) -1,
                 ey = ((region.getEndY() - actualRegion.getStartY()) / actualRegion.getHeight() * result.getHeight())-1;
 
+        //Assert no upscaling...
         assert sx >= 0;
         assert sy >= 0;
         assert ex < result.getWidth();
@@ -48,8 +74,6 @@ public class ImageCreator<T extends Value> {
             System.arraycopy(row, 0, cutVersion.getPixels(),(cutVersion.getHeight() - 1 - y) * cutVersion.getWidth(), cutVersion.getWidth());
         }
 
-        assert cutVersion.getWidth() >= minPixelWidth;
-        assert cutVersion.getHeight() >= minPixelHeight;
         return cutVersion;
     }
 }

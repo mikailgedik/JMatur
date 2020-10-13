@@ -56,4 +56,8 @@ public class ImageResult<T extends Value> extends DataAcceptor<T> {
     public Region getActualRegion() {
         return actualRegion;
     }
+
+    public LogicalRegion getLogicalRegion() {
+        return logicalRegion;
+    }
 }
