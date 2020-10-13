@@ -1,6 +1,12 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
+import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrot;
+import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
+import ch.mikailgedik.kzn.matur.backend.data.DataSet;
+import ch.mikailgedik.kzn.matur.backend.data.Region;
+import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.util.TreeMap;
@@ -8,20 +14,18 @@ import java.util.TreeMap;
 /** This class connects the frontend with the backend */
 public class Connector {
     private final SettingsManager settingsManager;
-    /*
-    private final OldMandelbrotCalculator calculator;
-    private OldCalculationResult.CalculationResultMandelbrot calculationResult;
-    private final OldImageCreator imageCreator;
-     */
     private Screen image;
+    private DataSet<ValueMandelbrot> dataSet;
+    private CalculatorMandelbrot calculatorMandelbrot;
+    private ImageCreator<ValueMandelbrot> imageCreator;
 
-    private FractalListener listener;
-
-    public Connector(FractalListener listener) {
+    public Connector() {
         image = null;
 
         settingsManager = SettingsManager.createDefaultSettingsManager();
-        this.listener = listener;
+        dataSet = DataSet.createDataSet(128, 128, 1, 1, 4, -2, -2, 4, 3000);
+        calculatorMandelbrot = new CalculatorMandelbrot();
+        imageCreator = new ImageCreator<>(dataSet, ImageCreator.MANDELBROT_COLOR_FUNCTION_HSB);
     }
 
     public Object getSetting(String name) {
@@ -44,10 +48,25 @@ public class Connector {
     }
 
     public void calculate() {
+        //TODO remove
+        System.out.println("Calculate does nothing");
     }
 
-    public void createImage() {
+    public synchronized void createImage() {
+        int w = settingsManager.getI(Constants.RENDER_IMAGE_WIDTH);
+        int h = settingsManager.getI(Constants.RENDER_IMAGE_HEIGHT);
+        double[] c = settingsManager.getRenderConstraints();
 
+        Region region = new Region(c[0], c[2], c[1], c[3]);
+
+        CalculableArea<ValueMandelbrot> area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
+
+        if(!area.getClusters().isEmpty()) {
+            calculatorMandelbrot.calculate(area, dataSet, settingsManager.getI(Constants.CALCULATION_MAX_THREADS));
+            dataSet.returnCalculableArea(area);
+        }
+
+        image = imageCreator.createScreen(w, h, region);
     }
 
     public Screen getImage() {
@@ -104,7 +123,6 @@ public class Connector {
     public void setImagePixelSize(int w, int h) {
         settingsManager.addSetting(Constants.RENDER_IMAGE_WIDTH, w);
         settingsManager.addSetting(Constants.RENDER_IMAGE_HEIGHT, h);
-
     }
 
 }

@@ -1,11 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrot;
-import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
-import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
-import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -130,8 +126,11 @@ public abstract class DataSet<T extends Value> {
 
     public double[] levelGetStartCoordinatesOfCluster(int depth, int id) {
         Level<T> l = levels.get(depth);
-        int clusterX = id % l.getLogicalWidth();
-        int clusterY = id / l.getLogicalWidth();
+        return levelGetStartCoordinatesOfCluster(depth, id % l.getLogicalWidth(), id / l.getLogicalWidth());
+    }
+
+    public double[] levelGetStartCoordinatesOfCluster(int depth, int clusterX, int clusterY) {
+        Level<T> l = levels.get(depth);
 
         return new double[]{
                 region.getStartX() + clusterX * logicClusterWidth * l.getPrecision(),
@@ -139,22 +138,9 @@ public abstract class DataSet<T extends Value> {
         };
     }
 
-    public double[] valueGetCenterCoordinates(int depth, int id, int index) {
-        Level<T> l = levels.get(depth);
-        int clusterX = id % l.getLogicalWidth();
-        int clusterY = id / l.getLogicalHeight();
-
-        double valueX = index % logicClusterWidth + .5;
-        double valueY = (index / logicClusterWidth) + .5;
-
-        return new double[]{
-                region.getStartX() + clusterX * logicClusterWidth * (l.getPrecision()) + l.getPrecision() * (valueX + .5),
-                region.getStartY() + clusterY * logicClusterHeight * (l.getPrecision()) + l.getPrecision() * (valueY + .5)
-        };
-    }
-
     /** ensures the all levels with the depth up to and including the parameter exist*/
     public void ensureLevelWithDepth(int depth) {
+        //TODO check if this method is called too often
         assert depth > -1;
         Level<T> prev = levels.get(levels.size() - 1);
         for(int i = levels.size(); i <= depth; i++) {
@@ -182,117 +168,74 @@ public abstract class DataSet<T extends Value> {
 
     protected abstract T[] createArray(int length);
 
-    public LogicalRegion dataGetLogicalRegion(Region region, double minPrecision) {
-        int depth = levelCalculateLevelWithMinPrecision(minPrecision);
-        Level<T> l = getLevels().get(depth);
+    public Region dataGetRegion(LogicalRegion logicalRegion) {
+        double[] start = levelGetStartCoordinatesOfCluster(logicalRegion.getDepth(), logicalRegion.getStartX(), logicalRegion.getStartY());
+        double[] end = levelGetStartCoordinatesOfCluster(logicalRegion.getDepth(), logicalRegion.getEndX(), logicalRegion.getEndY());
 
-        int clustersInX = (int)Math.ceil(region.getWidth()/levelCalculateAbsoluteClusterWidthAtDepth(depth));
-        int clustersInY = (int)Math.ceil(region.getHeight()/levelCalculateAbsoluteClusterHeightAtDepth(depth));
-
-        //Walk through necessary clusters
-        int[] firstCluster = levelCalculateFirstMatchingCluster(depth, region.getStartX(), region.getStartY());
-        int[] end = new int[] {firstCluster[0] + clustersInX, firstCluster[1] + clustersInY};
-
-        if(firstCluster[0] < 0) {
-            firstCluster[0] = 0;
-        }
-        if(firstCluster[1] < 0) {
-            firstCluster[1] = 0;
-        }
-        if(end[0] > l.getLogicalWidth()) {
-            end[0] = l.getLogicalWidth();
-        }
-        if(end[1] > l.getLogicalHeight()) {
-            end[1] = l.getLogicalHeight();
-        }
-
-        return new LogicalRegion(firstCluster[0], firstCluster[1], end[0], end[1], depth);
+        return new Region(start[0], start[1], end[0], end[1]);
     }
 
-    public void iterateOverRegion(Region region, double minPrecision, DataAcceptor<T> function) {
-        //TODO implement dataGetLogicalRegion() call instead of duplicated code
+    /** The returned LogicalRegion is always bigger than the parameter*/
+    public LogicalRegion dataGetUnrestrictedLogicalRegion(Region region, double minPrecision) {
         int depth = levelCalculateLevelWithMinPrecision(minPrecision);
-        ensureLevelWithDepth(depth);
-        Level<T> l = getLevels().get(depth);
-
         int clustersInX = (int)Math.ceil(region.getWidth()/levelCalculateAbsoluteClusterWidthAtDepth(depth));
         int clustersInY = (int)Math.ceil(region.getHeight()/levelCalculateAbsoluteClusterHeightAtDepth(depth));
 
         //Walk through necessary clusters
         int[] firstCluster = levelCalculateFirstMatchingCluster(depth, region.getStartX(), region.getStartY());
-        int[] end = new int[] {firstCluster[0] + clustersInX, firstCluster[1] + clustersInY};
+        int[] end = levelCalculateFirstMatchingCluster(depth, region.getEndX(), region.getEndY());
 
-        if(firstCluster[0] < 0) {
-            firstCluster[0] = 0;
-        }
-        if(firstCluster[1] < 0) {
-            firstCluster[1] = 0;
-        }
-        if(end[0] > l.getLogicalWidth()) {
-            end[0] = l.getLogicalWidth();
-        }
-        if(end[1] > l.getLogicalHeight()) {
-            end[1] = l.getLogicalHeight();
-        }
-        clustersInX = end[0] - firstCluster[0];
-        clustersInY = end[1] - firstCluster[1];
-        if(clustersInX < 1 || clustersInY < 1) {
-            System.out.println("[WARNING]Iterating area with no clusters");
-        }
+        return new LogicalRegion(firstCluster[0], firstCluster[1], end[0] + 1, end[1] + 1, depth);
+    }
 
-        function.setPrecision(levelGetPrecisionAtDepth(depth));
+    public LogicalRegion dataGetRestrictedLogicalRegion(LogicalRegion region) {
+        Level<T> l = levels.get(region.getDepth());
+        return new LogicalRegion(Math.max(region.getStartX(), 0),
+                Math.max(region.getStartY(), 0),
+                Math.min(region.getEndX(), l.getLogicalWidth()),
+                Math.min(region.getEndY(), l.getLogicalHeight()),
+                region.getDepth());
+    }
+
+    /** Iterates over all clusters in the region, excluding the region.getEndX() and region.getEndY()!*/
+    public void iterateOverLogicalRegion(LogicalRegion region, DataAcceptor<T> function) {
+        ensureLevelWithDepth(region.getDepth());
+        Level<T> l = getLevels().get(region.getDepth());
 
         //TODO walk through sorted list more efficiently
         for(Cluster<T> c: l.getClusters()) {
             int x = c.getId() % l.getLogicalWidth(), y = c.getId() / l.getLogicalWidth();
-            if(firstCluster[0] <= x && x < end[0] && firstCluster[1] <= y && y < end[1]) {
+            if(region.getStartX() <= x && x < region.getEndX() && region.getStartY() <= y && y < region.getEndY()) {
                 function.accept(c, x, y);
             }
         }
     }
 
     public CalculableArea<T> createCalculableArea(Region region, double minPrecision) {
-        int depth = levelCalculateLevelWithMinPrecision(minPrecision);
-        ensureLevelWithDepth(depth);
-        Level<T> l = getLevels().get(depth);
+        ensureLevelWithDepth(levelCalculateLevelWithMinPrecision(minPrecision));
+        return createCalculableArea(dataGetRestrictedLogicalRegion(
+                dataGetUnrestrictedLogicalRegion(region, minPrecision)
+        ));
+    }
+
+    /**
+     * The region has to be restricted by {@link #dataGetRestrictedLogicalRegion(LogicalRegion)},
+     * or else the calculation might crash
+     * @param r the desired region
+     * */
+    public CalculableArea<T> createCalculableArea(LogicalRegion r) {
+        Level<T> l = getLevels().get(r.getDepth());
         ArrayList<Cluster<T>> list = new ArrayList<>();
 
-        int clustersInX = (int)Math.ceil(region.getWidth()/levelCalculateAbsoluteClusterWidthAtDepth(depth));
-        int clustersInY = (int)Math.ceil(region.getHeight()/levelCalculateAbsoluteClusterHeightAtDepth(depth));
-
-        //Walk through necessary clusters
-        int[] firstCluster = levelCalculateFirstMatchingCluster(depth, region.getStartX(), region.getStartY());
-        int[] end = new int[] {firstCluster[0] + clustersInX, firstCluster[1] + clustersInY};
-
-        if(firstCluster[0] < 0) {
-            firstCluster[0] = 0;
-        }
-        if(firstCluster[1] < 0) {
-            firstCluster[1] = 0;
-        }
-        if(end[0] > l.getLogicalWidth()) {
-            end[0] = l.getLogicalWidth();
-        }
-        if(end[1] > l.getLogicalHeight()) {
-            end[1] = l.getLogicalHeight();
-        }
-        clustersInX = end[0] - firstCluster[0];
-        clustersInY = end[1] - firstCluster[1];
-        if(clustersInX < 1 || clustersInY < 1) {
-            System.out.println("[WARNING]Calculating area with no clusters");
-            return new CalculableArea<>
-                    (depth, levelGetPrecisionAtDepth(depth), list);
-        }
-
-        list.ensureCapacity(clustersInX * clustersInY);
+        list.ensureCapacity(r.getWidth() * r.getHeight());
 
         if(!l.getClusters().isEmpty()) {
             Iterator<Cluster<T>> it = l.getClusters().iterator();
             Cluster<T> curr = it.next();
             int idToCalculate;
 
-            for(int y = firstCluster[1]; y < end[1]; y++) {
-                for(int x = firstCluster[0]; x < end[0]; x++) {
+            for(int y = r.getStartY(); y < r.getEndY(); y++) {
+                for(int x = r.getStartX(); x < r.getEndX(); x++) {
                     idToCalculate = x + y * l.getLogicalWidth();
                     while(curr.getId() < idToCalculate && it.hasNext()) {
                         curr = it.next();
@@ -307,15 +250,15 @@ public abstract class DataSet<T extends Value> {
 
             list.trimToSize(); //Make list smaller to reduce footprint
         } else {
-            for(int y = firstCluster[1]; y < end[1]; y++) {
-                for(int x = firstCluster[0]; x < end[0]; x++) {
+            for(int y = r.getStartY(); y < r.getEndY(); y++) {
+                for(int x = r.getStartX(); x < r.getEndX(); x++) {
                     list.add(createCluster(x + y * l.getLogicalWidth()));
                 }
             }
         }
 
         return new CalculableArea<>
-                (depth, levelGetPrecisionAtDepth(depth), list);
+                (r.getDepth(), levelGetPrecisionAtDepth(r.getDepth()), list);
     }
 
     public int levelCalculateLevelWithMinPrecision(double precision) {
@@ -349,19 +292,6 @@ public abstract class DataSet<T extends Value> {
     }
 
     private static class DataSetMandelbrot extends DataSet<ValueMandelbrot> {
-        /**
-         * The absolute height is calculated through the logic cluster dimensions and the start values for the logic level dimensions
-         *
-         * @param logicClusterWidth
-         * @param logicClusterHeight
-         * @param startLogicLevelWidth
-         * @param startLogicLevelHeight
-         * @param clusterFactor
-         * @param regionStartX
-         * @param regionStartY
-         * @param regionWidth
-         * @param iterationsForFirstLevel
-         */
         public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel) {
             super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel);
         }
@@ -370,51 +300,5 @@ public abstract class DataSet<T extends Value> {
         protected ValueMandelbrot[] createArray(int length) {
             return new ValueMandelbrot[length];
         }
-    }
-
-    public static void main(String ... args) {
-        DataSet<ValueMandelbrot> d =  createDataSet(100, 100, 1,
-                1, 4, -1, -1, 2, 3000);
-        d.ensureLevelWithDepth(10);
-
-        int depth=0;
-
-        long t = System.currentTimeMillis();
-
-        CalculatorMandelbrot calc = new CalculatorMandelbrot();
-        CalculableArea<ValueMandelbrot> area = d.createCalculableArea(
-                new Region(-1, -1, 1, 1),
-                0.001);
-        calc.calculate(area, d, 24);
-        d.returnCalculableArea(area);
-        depth = area.getDepth();
-        System.out.println(depth);
-        System.out.println("Time: " + (System.currentTimeMillis() - t));
-        t = System.currentTimeMillis();
-
-        ImageCreator<ValueMandelbrot> creator = new ImageCreator<>(d, ImageCreator.MANDELBROT_COLOR_FUNCTION);
-
-        Screen s = creator.createScreen(2000, 2000, new Region(-1,-1,1,1));
-
-        /*
-        Screen s = new Screen(d.getLevels().get(depth).getLogicalWidth() * d.logicClusterWidth,
-                d.getLevels().get(depth).getLogicalHeight() * d.logicClusterHeight, 0xff00ff);
-        DataAcceptor<ValueMandelbrot> ac = new DataAcceptor<>() {
-            final int logicClusterWidth = d.getLogicClusterWidth(), logicClusterHeight = d.getLogicClusterHeight();
-            @Override
-            public void accept(Cluster<ValueMandelbrot> t, int clusterX, int clusterY) {
-                int xOff = clusterX * logicClusterWidth, yOff = clusterY * logicClusterHeight;
-                for(int y = 0; y < logicClusterWidth; y++) {
-                    for(int x = 0; x < logicClusterHeight; x++) {
-                        assert s.setPixel(xOff + x,yOff + y, t.getValue()[x + y * logicClusterWidth].getValue() == -1 ? 0xffffff: 0x0);
-                    }
-                }
-            }
-        };
-
-        d.iterateOverRegion(new Region(-1, -1, 1, 1), 0.001, ac);
-        */
-        FileManager.getFileManager().saveImage("/home/mikail/Desktop/File.png", s);
-        System.out.println("Time: " + (System.currentTimeMillis() - t));
     }
 }

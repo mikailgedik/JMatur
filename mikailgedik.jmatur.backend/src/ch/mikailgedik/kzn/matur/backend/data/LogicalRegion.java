@@ -38,7 +38,7 @@ public class LogicalRegion {
 
     public String toString() {
         return Region.class.getCanonicalName() +
-                "["+getStartX() + ", "+getStartY() + ", "+getEndX() + ", "+getEndY() + " ]";
+                "["+getStartX() + ", "+getStartY() + ", "+getEndX() + ", "+getEndY() + "]";
     }
 
     public int getDepth() {

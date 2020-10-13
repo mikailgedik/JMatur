@@ -25,7 +25,7 @@ public class WindowFrontEnd extends JFrame {
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
-        connector = new Connector(null);
+        connector = new Connector();
         init();
 
         splitPane.setDividerLocation(0.8);

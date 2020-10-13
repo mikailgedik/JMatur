@@ -1,5 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
+import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.*;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
@@ -7,46 +8,62 @@ import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 
 import java.awt.*;
 
-public class ImageCreator<T extends Value> extends DataAcceptor<T> {
+public class ImageCreator<T extends Value> {
     private ColorFunction<T> colorFunction;
     private DataSet<T> dataSet;
-    private double minPrecision;
-    private LogicalRegion logicalRegion;
-    private Screen result;
+    private ImageResult<T> imageResult;
 
     public ImageCreator(DataSet<T> dataSet, ColorFunction<T> colorFunction) {
         this.colorFunction = colorFunction;
         this.dataSet = dataSet;
     }
 
-    public Screen createScreen(int pixelWidth, int pixelHeight, Region region) {
-        prepare(pixelWidth, pixelHeight, region);
-        System.out.println(logicalRegion.getDepth());
-        dataSet.iterateOverRegion(region, minPrecision, this);
+    public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region) {
+        //TODO buffer image results to avoid creating same images over and over
+        //Only cropping has to be done anew
+        imageResult = new ImageResult<>(minPixelWidth, minPixelHeight, region, colorFunction, dataSet);
+        imageResult.create();
 
-        return result;
-    }
+        Screen result = imageResult.getResult();
+        Region actualRegion = imageResult.getActualRegion();
 
-    private void prepare(int pixelWidth, int pixelHeight, Region region) {
-        minPrecision = Math.min(region.getWidth() / pixelWidth, region.getHeight() / pixelHeight);
-        logicalRegion = dataSet.dataGetLogicalRegion(region, minPrecision);
+        Screen cutVersion;
 
-        result = new Screen(logicalRegion.getWidth() * dataSet.getLogicClusterWidth(),
-                logicalRegion.getHeight() * dataSet.getLogicClusterHeight(), 0xff00ff);
-    }
+        double sx = ((region.getStartX() - actualRegion.getStartX()) / actualRegion.getWidth() * result.getWidth()),
+                sy = ((region.getStartY() - actualRegion.getStartY()) / actualRegion.getHeight() * result.getHeight()),
+                ex = ((region.getEndX() - actualRegion.getStartX()) / actualRegion.getWidth() * result.getWidth()) -1,
+                ey = ((region.getEndY() - actualRegion.getStartY()) / actualRegion.getHeight() * result.getHeight())-1;
 
-    @Override
-    public void accept(Cluster<T> t, int clusterX, int clusterY) {
-        int xOffset = dataSet.getLogicClusterWidth()* (clusterX - logicalRegion.getStartX()),
-                yOffset = dataSet.getLogicClusterHeight()*(clusterY - logicalRegion.getStartY());
+        assert sx >= 0;
+        assert sy >= 0;
+        assert ex < result.getWidth();
+        assert ey < result.getHeight();
 
-        for(int y = 0; y < dataSet.getLogicClusterHeight(); y++) {
-            for(int x = 0; x < dataSet.getLogicClusterWidth(); x++) {
-                result.setPixel(x + xOffset, y + yOffset, colorFunction.colorOf(t.getValue()[x + y * dataSet.getLogicClusterWidth()]));
-            }
+        cutVersion = result.subScreen((int)sx, (int)sy,(int)(ex -sx), (int)(ey -sy));
+
+        int[] row = new int[cutVersion.getWidth()];
+        for(int y = 0; y < cutVersion.getHeight()/2; y++) {
+            System.arraycopy(cutVersion.getPixels(), y * cutVersion.getWidth(), row, 0, cutVersion.getWidth());
+            System.arraycopy(cutVersion.getPixels(), (cutVersion.getHeight() - 1 - y) * cutVersion.getWidth(), cutVersion.getPixels(),y * cutVersion.getWidth(), cutVersion.getWidth());
+            System.arraycopy(row, 0, cutVersion.getPixels(),(cutVersion.getHeight() - 1 - y) * cutVersion.getWidth(), cutVersion.getWidth());
         }
+
+        assert cutVersion.getWidth() >= minPixelWidth;
+        assert cutVersion.getHeight() >= minPixelHeight;
+        return cutVersion;
     }
 
-    public static final ColorFunction<ValueMandelbrot> MANDELBROT_COLOR_FUNCTION =
+    public static final ColorFunction<ValueMandelbrot> MANDELBROT_COLOR_FUNCTION_IN_OUT =
             (v) -> v.getValue() == -1 ? 0xffffff : 0x0;
+
+    public static final ColorFunction<ValueMandelbrot> MANDELBROT_COLOR_FUNCTION_HSB =
+            (v)->{
+                if(v.getValue() == -1) {
+                    return 0x0;
+                }
+                double max = Math.log(3000);
+                double log = Math.log(v.getValue());
+
+                return Color.HSBtoRGB((float) (log/max),1, 1) & 0xffffff;
+            };
 }
