@@ -5,42 +5,53 @@ import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 
 public class CalculatorMandelbrot {
-    private ExecutorService service;
     private int logicClusterWidth, logicClusterHeight, iterations;
     private DataSet<ValueMandelbrot> currentDataSet;
     private CalculableArea<ValueMandelbrot> area;
+    private ArrayList<CalculatorUnit> units;
 
     public CalculatorMandelbrot() {
         cleanUp();
+        units = new ArrayList<>();
+        setDefaultUnits();
     }
 
+    private void setDefaultUnits() {
+        //units.add(new CalculatorUnitCPU(1));
+        for(long device: CalculatorUnitGPU.getAllAvailableDevices()) {
+            CalculatorUnitGPU gpu = new CalculatorUnitGPU(device);
+            units.add(gpu);
+            //System.out.println(gpu);
+        }
+    }
 
     public void calculate(CalculableArea<ValueMandelbrot> area, DataSet<ValueMandelbrot> dataSet, int threads, long maxWaitingTime) {
         currentDataSet = dataSet;
         this.area = area;
-        prepare(threads);
+        prepare();
 
-        area.forEach(c -> service.submit(new MT(c)));
-        service.shutdown();
-
-        try {
-            service.awaitTermination(maxWaitingTime, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            //TODO correct behaviour when InterruptedException is thrown?
-            service.shutdownNow();
-            Thread.currentThread().interrupt();
-        } finally {
-            cleanUp();
+        int unit = 0;
+        for(Cluster<ValueMandelbrot> c: area) {
+            units.get(unit).addCluster(c);
+            unit++;
+            unit %= units.size();
         }
+
+
+        units.forEach(u -> {
+            if(u instanceof CalculatorUnitCPU) {
+                ((CalculatorUnitCPU) u).setThreads(threads);
+            }
+            u.startCalculation(logicClusterWidth, logicClusterHeight, iterations, area.getDepth(), area.getPrecision(), dataSet);
+        });
+        units.forEach(u -> u.awaitTermination(maxWaitingTime));
+        cleanUp();
     }
 
     private void cleanUp() {
-        service = null;
         currentDataSet = null;
         logicClusterWidth = 0;
         logicClusterHeight = 0;
@@ -48,48 +59,9 @@ public class CalculatorMandelbrot {
         area = null;
     }
 
-    private void prepare(int t) {
-        assert service == null;
-        service = Executors.newFixedThreadPool(t);
+    private void prepare() {
         logicClusterWidth = currentDataSet.getLogicClusterWidth();
         logicClusterHeight = currentDataSet.getLogicClusterHeight();
         iterations = currentDataSet.levelGetIterationsForDepth(area.getDepth());
-    }
-
-    private class MT implements Runnable {
-        private final Cluster<ValueMandelbrot> c;
-        private final double startX, startY;
-
-        public MT(Cluster<ValueMandelbrot> c) {
-            this.c = c;
-            double[] d = currentDataSet.levelGetStartCoordinatesOfCluster(area.getDepth(), c.getId());
-            this.startX = d[0];
-            this.startY = d[1];
-        }
-
-        @Override
-        public void run() {
-            long t = System.currentTimeMillis();
-            for(int y = 0; y < logicClusterHeight; y++) {
-                for(int x = 0; x < logicClusterWidth; x++) {
-                    c.getValue()[x + y * logicClusterWidth] =
-                            new ValueMandelbrot(calc(startX + x * area.getPrecision(), startY + y * area.getPrecision()));
-                }
-            }
-        }
-    }
-
-    private int calc(double x, double y) {
-        double a = 0, b = 0, ta, tb;
-        for(int i = 0; i < iterations; ++i) {
-            ta = a*a - b*b + x;
-            tb = 2 * a * b + y;
-            a = ta;
-            b = tb;
-            if(a*a + b*b > 4) {
-                return i;
-            }
-        }
-        return -1;
     }
 }
