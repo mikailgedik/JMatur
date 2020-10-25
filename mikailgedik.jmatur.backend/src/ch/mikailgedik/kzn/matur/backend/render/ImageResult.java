@@ -1,24 +1,20 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
-import ch.mikailgedik.kzn.matur.backend.data.*;
+import ch.mikailgedik.kzn.matur.backend.data.DataAcceptor;
+import ch.mikailgedik.kzn.matur.backend.data.DataSet;
+import ch.mikailgedik.kzn.matur.backend.data.LogicalRegion;
+import ch.mikailgedik.kzn.matur.backend.data.Region;
 import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-public class ImageResult<T extends Value> extends DataAcceptor<T> {
-    private final ColorFunction<T> colorFunction;
+public abstract class ImageResult<T extends Value> extends DataAcceptor<T> {
     private final DataSet<T> dataSet;
     private final LogicalRegion logicalRegion;
     private final Region actualRegion;
     private final int maxIterations;
-    private Screen result;
-    private ExecutorService executorService;
+    private Screen screen;
 
-    public ImageResult(int pixelWidth, int pixelHeight, Region region, ColorFunction<T> colorFunction, DataSet<T> dataSet) {
-        this.colorFunction = colorFunction;
+    public ImageResult(int pixelWidth, int pixelHeight, Region region, DataSet<T> dataSet) {
         this.dataSet = dataSet;
 
         double minimalPrecision = Math.min(region.getWidth() / pixelWidth, region.getHeight() / pixelHeight);
@@ -28,46 +24,34 @@ public class ImageResult<T extends Value> extends DataAcceptor<T> {
         maxIterations = dataSet.levelGetIterationsForDepth(logicalRegion.getDepth());
     }
 
-    public void create(int threads, long maxWaitingTime) {
-        result = new Screen((logicalRegion.getWidth()) * dataSet.getLogicClusterWidth(),
-                (logicalRegion.getHeight()) * dataSet.getLogicClusterHeight(), 0xff00ff);
-        executorService = Executors.newFixedThreadPool(threads);
-        dataSet.iterateOverLogicalRegion(logicalRegion, this);
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(maxWaitingTime, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            //TODO correct behaviour when InterruptedException is thrown?
-            executorService.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+    public abstract void create(int threads, long maxWaitingTime);
+
+    public DataSet<T> getDataSet() {
+        return dataSet;
     }
 
-    @Override
-    public void accept(Cluster<T> t, int clusterX, int clusterY) {
-
-        executorService.submit(() -> {
-            int xOffset = dataSet.getLogicClusterWidth()* (clusterX - logicalRegion.getStartX()),
-                    yOffset = dataSet.getLogicClusterHeight()*(clusterY - logicalRegion.getStartY());
-
-            for(int y = 0; y < dataSet.getLogicClusterHeight(); y++) {
-                for(int x = 0; x < dataSet.getLogicClusterWidth(); x++) {
-                    result.setPixel(x + xOffset, y + yOffset,
-                            colorFunction.colorOf(t.getValue()[x + y * dataSet.getLogicClusterWidth()], maxIterations));
-                }
-            }
-        });
-    }
-
-    public Screen getResult() {
-        return result;
+    public LogicalRegion getLogicalRegion() {
+        return logicalRegion;
     }
 
     public Region getActualRegion() {
         return actualRegion;
     }
 
-    public LogicalRegion getLogicalRegion() {
-        return logicalRegion;
+    public int getMaxIterations() {
+        return maxIterations;
+    }
+
+    public Screen getScreen() {
+        return screen;
+    }
+
+    public void setScreen(Screen screen) {
+        this.screen = screen;
+    }
+
+    public void createScreen() {
+        setScreen(new Screen((getLogicalRegion().getWidth()) * getDataSet().getLogicClusterWidth(),
+                (getLogicalRegion().getHeight()) * getDataSet().getLogicClusterHeight(), 0xff00ff));
     }
 }

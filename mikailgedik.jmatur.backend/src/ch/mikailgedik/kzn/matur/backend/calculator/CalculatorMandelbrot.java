@@ -4,6 +4,7 @@ import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
+import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
 import java.util.ArrayList;
 
@@ -20,11 +21,9 @@ public class CalculatorMandelbrot {
     }
 
     private void setDefaultUnits() {
-        //units.add(new CalculatorUnitCPU(1));
-        for(long device: CalculatorUnitGPU.getAllAvailableDevices()) {
+        for(long device: OpenCLHelper.getAllAvailableDevices()) {
             CalculatorUnitGPU gpu = new CalculatorUnitGPU(device);
             units.add(gpu);
-            //System.out.println(gpu);
         }
     }
 
@@ -63,5 +62,9 @@ public class CalculatorMandelbrot {
         logicClusterWidth = currentDataSet.getLogicClusterWidth();
         logicClusterHeight = currentDataSet.getLogicClusterHeight();
         iterations = currentDataSet.levelGetIterationsForDepth(area.getDepth());
+    }
+
+    public ArrayList<CalculatorUnit> getUnits() {
+        return this.units;
     }
 }

@@ -4,9 +4,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 public class FileManager {
     public static final String DEFAULT_SETTINGS = "/settings/defaultsettings";
@@ -30,6 +28,23 @@ public class FileManager {
 
     public InputStream getResourceAsStream(String name) {
         return FileManager.class.getResourceAsStream(name);
+    }
+
+    public String readFile(String f) {
+        StringBuilder builder = new StringBuilder();
+        BufferedReader r = new BufferedReader(new InputStreamReader(getResourceAsStream(f)));
+
+        try {
+            String line;
+            while((line = r.readLine()) != null) {
+                builder.append(line).append("\n");
+            }
+            r.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return builder.toString();
     }
 
     public static FileManager getFileManager() {
