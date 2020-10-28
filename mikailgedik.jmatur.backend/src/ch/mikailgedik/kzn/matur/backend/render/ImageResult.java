@@ -5,16 +5,15 @@ import ch.mikailgedik.kzn.matur.backend.data.DataAcceptor;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.LogicalRegion;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
-public abstract class ImageResult<T extends Value> extends DataAcceptor<T> {
-    private final DataSet<T> dataSet;
+public abstract class ImageResult extends DataAcceptor {
+    private final DataSet dataSet;
     private final LogicalRegion logicalRegion;
     private final Region actualRegion;
     private final int maxIterations;
     private Screen screen;
 
-    public ImageResult(int pixelWidth, int pixelHeight, Region region, DataSet<T> dataSet) {
+    public ImageResult(int pixelWidth, int pixelHeight, Region region, DataSet dataSet) {
         this.dataSet = dataSet;
 
         double minimalPrecision = Math.min(region.getWidth() / pixelWidth, region.getHeight() / pixelHeight);
@@ -26,7 +25,7 @@ public abstract class ImageResult<T extends Value> extends DataAcceptor<T> {
 
     public abstract void create(int threads, long maxWaitingTime);
 
-    public DataSet<T> getDataSet() {
+    public DataSet getDataSet() {
         return dataSet;
     }
 

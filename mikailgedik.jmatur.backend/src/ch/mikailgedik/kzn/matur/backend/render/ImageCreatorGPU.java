@@ -4,20 +4,19 @@ import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.LogicalRegion;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
 import java.util.ArrayList;
 
-public class ImageCreatorGPU<T extends Value> extends ImageCreator{
-    private final DataSet<T> dataSet;
-    private ImageResultGPU<T> imageResult;
-    private final ArrayList<ImageResultGPU<T>> buffer;
+public class ImageCreatorGPU extends ImageCreator{
+    private final DataSet dataSet;
+    private ImageResultGPU imageResult;
+    private final ArrayList<ImageResultGPU> buffer;
     private CLDevice device;
     private final long program, kernel;
 
-    public ImageCreatorGPU(DataSet<T> dataSet, CLDevice device, String colorFunctionFile, String kernelName) {
+    public ImageCreatorGPU(DataSet dataSet, CLDevice device, String colorFunctionFile, String kernelName) {
         this.dataSet = dataSet;
         buffer = new ArrayList<>();
 
@@ -32,10 +31,10 @@ public class ImageCreatorGPU<T extends Value> extends ImageCreator{
         //TODO buffer image results to avoid creating same images over and over
         //Only cropping has to be done anew
 
-        imageResult = new ImageResultGPU<>(minPixelWidth, minPixelHeight, region, dataSet, device, kernel);
+        imageResult = new ImageResultGPU(minPixelWidth, minPixelHeight, region, dataSet, device, kernel);
         boolean create = true;
         LogicalRegion tr;
-        for(ImageResultGPU<T> i: buffer) {
+        for(ImageResultGPU i: buffer) {
             tr = i.getLogicalRegion();
             if(tr.getStartX() <= imageResult.getLogicalRegion().getStartX() &&
                     tr.getStartY() <= imageResult.getLogicalRegion().getStartY() &&

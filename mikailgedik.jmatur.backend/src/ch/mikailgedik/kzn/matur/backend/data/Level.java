@@ -1,13 +1,11 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class Level<T extends Value> {
-    private final ArrayList<Cluster<T>> clusters;
+public class Level {
+    private final ArrayList<Cluster> clusters;
     private final int depth;
     //Amount of clusters in x-direction
     private final int logicalWidth;
@@ -25,9 +23,9 @@ public class Level<T extends Value> {
         this.iterations = iterations;
     }
 
-    public Cluster<T> getClusterById(int id) {
+    public Cluster getClusterById(int id) {
         //TODO add binary search for performance
-        for(Cluster<T> t: clusters) {
+        for(Cluster t: clusters) {
             if(t.getId() == id) {
                 return t;
             }
@@ -35,7 +33,7 @@ public class Level<T extends Value> {
         return null;
     }
 
-    public ArrayList<Cluster<T>> getClusters() {
+    public ArrayList<Cluster> getClusters() {
         return clusters;
     }
 
@@ -59,12 +57,12 @@ public class Level<T extends Value> {
         return precision;
     }
 
-    public void addAll(List<Cluster<T>> others) {
+    public void addAll(List<Cluster> others) {
         this.clusters.addAll(others);
         this.clusters.sort(comparator);
     }
 
-    private Comparator<Cluster<T>> comparator = (o1, o2) -> {
+    private Comparator<Cluster> comparator = (o1, o2) -> {
         assert o1.getId() != o2.getId(): "Two objects with same id";
         return o1.getId() < o2.getId() ? -1: 1;
     };

@@ -2,17 +2,16 @@ package ch.mikailgedik.kzn.matur.backend.render;
 
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.*;
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
 import java.util.ArrayList;
 
-public class ImageCreatorCPU<T extends Value> extends ImageCreator {
-    private ColorFunction<T> colorFunction;
-    private DataSet<T> dataSet;
-    private ImageResultCPU<T> imageResult;
-    private ArrayList<ImageResultCPU<T>> buffer;
+public class ImageCreatorCPU extends ImageCreator {
+    private ColorFunction colorFunction;
+    private DataSet dataSet;
+    private ImageResultCPU imageResult;
+    private ArrayList<ImageResultCPU> buffer;
 
-    public ImageCreatorCPU(DataSet<T> dataSet, ColorFunction<T> colorFunction) {
+    public ImageCreatorCPU(DataSet dataSet, ColorFunction colorFunction) {
         this.colorFunction = colorFunction;
         this.dataSet = dataSet;
         buffer = new ArrayList<>();
@@ -23,10 +22,10 @@ public class ImageCreatorCPU<T extends Value> extends ImageCreator {
         //TODO buffer image results to avoid creating same images over and over
         //Only cropping has to be done anew
 
-        imageResult = new ImageResultCPU<>(minPixelWidth, minPixelHeight, region, colorFunction, dataSet);
+        imageResult = new ImageResultCPU(minPixelWidth, minPixelHeight, region, colorFunction, dataSet);
         boolean create = true;
         LogicalRegion tr;
-        for(ImageResultCPU<T> i: buffer) {
+        for(ImageResultCPU i: buffer) {
             tr = i.getLogicalRegion();
             if(tr.getStartX() <= imageResult.getLogicalRegion().getStartX() &&
                     tr.getStartY() <= imageResult.getLogicalRegion().getStartY() &&

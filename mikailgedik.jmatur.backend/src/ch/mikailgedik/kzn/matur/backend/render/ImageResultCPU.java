@@ -1,18 +1,16 @@
 package ch.mikailgedik.kzn.matur.backend.render;
 
-import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 import ch.mikailgedik.kzn.matur.backend.data.*;
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class ImageResultCPU<T extends Value> extends ImageResult<T> {
-    private final ColorFunction<T> colorFunction;
+public class ImageResultCPU extends ImageResult {
+    private final ColorFunction colorFunction;
     private ExecutorService executorService;
 
-    public ImageResultCPU(int pixelWidth, int pixelHeight, Region region, ColorFunction<T> colorFunction, DataSet<T> dataSet) {
+    public ImageResultCPU(int pixelWidth, int pixelHeight, Region region, ColorFunction colorFunction, DataSet dataSet) {
         super(pixelWidth, pixelHeight, region, dataSet);
         this.colorFunction = colorFunction;
     }
@@ -32,7 +30,7 @@ public class ImageResultCPU<T extends Value> extends ImageResult<T> {
     }
 
     @Override
-    public void accept(Cluster<T> t, int clusterX, int clusterY) {
+    public void accept(Cluster t, int clusterX, int clusterY) {
         executorService.submit(() -> {
             int xOffset = getDataSet().getLogicClusterWidth()* (clusterX - getLogicalRegion().getStartX()),
                     yOffset = getDataSet().getLogicClusterHeight()*(clusterY - getLogicalRegion().getStartY());

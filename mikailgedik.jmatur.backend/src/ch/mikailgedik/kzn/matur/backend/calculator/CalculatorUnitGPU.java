@@ -3,7 +3,6 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
@@ -23,11 +22,11 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     /** Prefix p stands for pointer, these are addresses for memory on the GPU*/
     private long pMaxIterations, pClusterDimensions, pPrecision, pCoordinates;
     private int logicClusterWidth, logicClusterHeight, maxIterations;
-    private DataSet<ValueMandelbrot> currentDataSet;
+    private DataSet currentDataSet;
     private double precision;
     private int depth;
 
-    private ArrayList<Cluster<ValueMandelbrot>> clusters;
+    private ArrayList<Cluster> clusters;
     private Thread thread;
 
     public CalculatorUnitGPU(long device) {
@@ -86,12 +85,12 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     }
 
     @Override
-    public void addCluster(Cluster<ValueMandelbrot> cluster) {
+    public void addCluster(Cluster cluster) {
         clusters.add(cluster);
     }
 
     @Override
-    public void startCalculation(int logicClusterWidth, int logicClusterHeight, int maxIterations, int depth, double precision, DataSet<ValueMandelbrot> dataSet) {
+    public void startCalculation(int logicClusterWidth, int logicClusterHeight, int maxIterations, int depth, double precision, DataSet dataSet) {
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
         this.maxIterations = maxIterations;
@@ -102,7 +101,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
 
         this.thread = new Thread(() -> {
             setUnchangedParams();
-            for (Cluster<ValueMandelbrot> c : clusters) {
+            for (Cluster c : clusters) {
                 submit(c);
                 CL22.clFinish(device.getCommandQueue());
             }
@@ -111,14 +110,14 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         this.thread.start();
     }
 
-    private void submit(Cluster<ValueMandelbrot> c) {
+    private void submit(Cluster c) {
         allocateMemory(c);
         runKernel();
         readBackMemory(c);
         releaseMemory();
     }
 
-    private void readBackMemory(Cluster<ValueMandelbrot> c) {
+    private void readBackMemory(Cluster c) {
         MemMan.copyToRAM(c);
     }
 
@@ -166,7 +165,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         MemMan.freeMemoryObject(pPrecision);
     }
 
-    private void allocateMemory(Cluster<ValueMandelbrot> c) {
+    private void allocateMemory(Cluster c) {
         double[] start = currentDataSet.
                 levelGetStartCoordinatesOfCluster(depth, c.getId());
 

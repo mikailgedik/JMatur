@@ -1,14 +1,11 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 
 
-public abstract class DataSet<T extends Value> {
-    private final ArrayList<Level<T>> levels;
+public abstract class DataSet {
+    private final ArrayList<Level> levels;
     /** logic cluster width: amount of values
      * absolute cluster width: width in mathematical sense*/
     private final int logicClusterWidth, logicClusterHeight;
@@ -35,7 +32,7 @@ public abstract class DataSet<T extends Value> {
         double absoluteClusterHeight = absoluteClusterWidth * logicClusterHeight / logicClusterWidth;
         double absoluteLevelHeight = startLogicLevelHeight * absoluteClusterHeight;
 
-        levels.add(new Level<>(
+        levels.add(new Level(
                 0,
                 startLogicLevelWidth,
                 startLogicLevelHeight,
@@ -127,12 +124,12 @@ public abstract class DataSet<T extends Value> {
     }
 
     public double[] levelGetStartCoordinatesOfCluster(int depth, int id) {
-        Level<T> l = levels.get(depth);
+        Level l = levels.get(depth);
         return levelGetStartCoordinatesOfCluster(depth, id % l.getLogicalWidth(), id / l.getLogicalWidth());
     }
 
     public double[] levelGetStartCoordinatesOfCluster(int depth, int clusterX, int clusterY) {
-        Level<T> l = levels.get(depth);
+        Level l = levels.get(depth);
 
         return new double[]{
                 region.getStartX() + clusterX * logicClusterWidth * l.getPrecision(),
@@ -144,9 +141,9 @@ public abstract class DataSet<T extends Value> {
     public void ensureLevelWithDepth(int depth) {
         //TODO check if this method is called too often
         assert depth > -1;
-        Level<T> prev = levels.get(levels.size() - 1);
+        Level prev = levels.get(levels.size() - 1);
         for(int i = levels.size(); i <= depth; i++) {
-            levels.add(prev = new Level<>(i, prev.getLogicalWidth() * clusterFactor,
+            levels.add(prev = new Level(i, prev.getLogicalWidth() * clusterFactor,
                     prev.getLogicalHeight() * clusterFactor,
                     prev.getPrecision() / clusterFactor,
                     levelCalculateIterationsForDepth(i)));
@@ -164,11 +161,11 @@ public abstract class DataSet<T extends Value> {
                 (int) Math.floor(startY * levelCalculateLogicLevelHeight(depth))};
     }
 
-    public Cluster<T> createCluster(int id) {
-        return new Cluster<>(createArray(logicClusterWidth * logicClusterHeight), id);
+    public Cluster createCluster(int id) {
+        return new Cluster(createArray(logicClusterWidth * logicClusterHeight), id);
     }
 
-    protected abstract T[] createArray(int length);
+    protected abstract int[] createArray(int length);
 
     public Region dataGetRegion(LogicalRegion logicalRegion) {
         double[] start = levelGetStartCoordinatesOfCluster(logicalRegion.getDepth(), logicalRegion.getStartX(), logicalRegion.getStartY());
@@ -191,7 +188,7 @@ public abstract class DataSet<T extends Value> {
     }
 
     public LogicalRegion dataGetRestrictedLogicalRegion(LogicalRegion region) {
-        Level<T> l = levels.get(region.getDepth());
+        Level l = levels.get(region.getDepth());
         return new LogicalRegion(Math.max(region.getStartX(), 0),
                 Math.max(region.getStartY(), 0),
                 Math.min(region.getEndX(), l.getLogicalWidth()),
@@ -200,12 +197,12 @@ public abstract class DataSet<T extends Value> {
     }
 
     /** Iterates over all clusters in the region, excluding the region.getEndX() and region.getEndY()!*/
-    public void iterateOverLogicalRegion(LogicalRegion region, DataAcceptor<T> function) {
+    public void iterateOverLogicalRegion(LogicalRegion region, DataAcceptor function) {
         ensureLevelWithDepth(region.getDepth());
-        Level<T> l = getLevels().get(region.getDepth());
+        Level l = getLevels().get(region.getDepth());
 
         //TODO walk through sorted list more efficiently
-        for(Cluster<T> c: l.getClusters()) {
+        for(Cluster c: l.getClusters()) {
             int x = c.getId() % l.getLogicalWidth(), y = c.getId() / l.getLogicalWidth();
             if(region.getStartX() <= x && x < region.getEndX() && region.getStartY() <= y && y < region.getEndY()) {
                 function.accept(c, x, y);
@@ -213,7 +210,7 @@ public abstract class DataSet<T extends Value> {
         }
     }
 
-    public CalculableArea<T> createCalculableArea(Region region, double minPrecision) {
+    public CalculableArea createCalculableArea(Region region, double minPrecision) {
         ensureLevelWithDepth(levelCalculateLevelWithMinPrecision(minPrecision));
         return createCalculableArea(dataGetRestrictedLogicalRegion(
                 dataGetUnrestrictedLogicalRegion(region, minPrecision)
@@ -225,15 +222,15 @@ public abstract class DataSet<T extends Value> {
      * or else the calculation might crash
      * @param r the desired region
      * */
-    public CalculableArea<T> createCalculableArea(LogicalRegion r) {
-        Level<T> l = getLevels().get(r.getDepth());
-        ArrayList<Cluster<T>> list = new ArrayList<>();
+    public CalculableArea createCalculableArea(LogicalRegion r) {
+        Level l = getLevels().get(r.getDepth());
+        ArrayList<Cluster> list = new ArrayList<>();
 
         list.ensureCapacity(r.getWidth() * r.getHeight());
 
         if(!l.getClusters().isEmpty()) {
-            Iterator<Cluster<T>> it = l.getClusters().iterator();
-            Cluster<T> curr = it.next();
+            Iterator<Cluster> it = l.getClusters().iterator();
+            Cluster curr = it.next();
             int idToCalculate;
 
             for(int y = r.getStartY(); y < r.getEndY(); y++) {
@@ -259,7 +256,7 @@ public abstract class DataSet<T extends Value> {
             }
         }
 
-        return new CalculableArea<>
+        return new CalculableArea
                 (r.getDepth(), levelGetPrecisionAtDepth(r.getDepth()), list);
     }
 
@@ -269,11 +266,11 @@ public abstract class DataSet<T extends Value> {
         return depth;
     }
 
-    public void returnCalculableArea(CalculableArea<T> area) {
+    public void returnCalculableArea(CalculableArea area) {
         getLevels().get(area.getDepth()).addAll(area.getClusters());
     }
 
-    public ArrayList<Level<T>> getLevels() {
+    public ArrayList<Level> getLevels() {
         return levels;
     }
 
@@ -286,21 +283,21 @@ public abstract class DataSet<T extends Value> {
     }
 
 
-    public static DataSet<ValueMandelbrot> createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
+    public static DataSet createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
                                                          int startLogicLevelHeight, int clusterFactor, double regionStartX,
                                                          double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         return new DataSetMandelbrot(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor,
                 regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
     }
 
-    private static class DataSetMandelbrot extends DataSet<ValueMandelbrot> {
+    private static class DataSetMandelbrot extends DataSet {
         public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
             super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
         }
 
         @Override
-        protected ValueMandelbrot[] createArray(int length) {
-            return new ValueMandelbrot[length];
+        protected int[] createArray(int length) {
+            return new int[length];
         }
     }
 

@@ -4,8 +4,6 @@ import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import org.lwjgl.BufferUtils;
@@ -14,13 +12,13 @@ import org.lwjgl.opencl.CL22;
 
 import java.nio.ByteBuffer;
 
-public class ImageResultGPU<T extends Value> extends ImageResult<T> {
+public class ImageResultGPU extends ImageResult {
     private final CLDevice device;
     private final long kernel;
 
     private long pImage, pDestinationOffset, pLogClusW, pLogImgW, pMaxIter;
 
-    public ImageResultGPU(int pixelWidth, int pixelHeight, Region region, DataSet<T> dataSet, CLDevice device, long kernel) {
+    public ImageResultGPU(int pixelWidth, int pixelHeight, Region region, DataSet dataSet, CLDevice device, long kernel) {
         super(pixelWidth, pixelHeight, region, dataSet);
         this.device = device;
         this.kernel = kernel;
@@ -75,7 +73,7 @@ public class ImageResultGPU<T extends Value> extends ImageResult<T> {
         OpenCLHelper.check(error);
     }
 
-    private void makeParam(Cluster<ValueMandelbrot> c, int[] destinationOffset) {
+    private void makeParam(Cluster c, int[] destinationOffset) {
         this.pDestinationOffset = MemMan.allocateAsReadMemory(device, destinationOffset);
 
         int[] error = new int[1];
@@ -91,13 +89,13 @@ public class ImageResultGPU<T extends Value> extends ImageResult<T> {
     }
 
     @Override
-    public void accept(Cluster<T> c, int clusterX, int clusterY) {
-        MemMan.ensureInGPU(device, (Cluster<ValueMandelbrot>)c);
+    public void accept(Cluster c, int clusterX, int clusterY) {
+        MemMan.ensureInGPU(device, c);
         int xOffset = getDataSet().getLogicClusterWidth()* (clusterX - getLogicalRegion().getStartX()),
                 yOffset = getDataSet().getLogicClusterHeight()*(clusterY - getLogicalRegion().getStartY());
 
 
-        makeParam((Cluster<ValueMandelbrot>)c, new int[]{xOffset, yOffset});
+        makeParam(c, new int[]{xOffset, yOffset});
         runKernel(); //TODO free pDestinationOffset
         releaseParam();
     }

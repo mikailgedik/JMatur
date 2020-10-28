@@ -1,16 +1,12 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrot;
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitGPU;
 import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
-import ch.mikailgedik.kzn.matur.backend.render.ColorFunction;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
-import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorGPU;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
@@ -20,7 +16,7 @@ import java.util.TreeMap;
 public class Connector {
     private final SettingsManager settingsManager;
     private Screen image;
-    private DataSet<ValueMandelbrot> dataSet;
+    private DataSet dataSet;
     private CalculatorMandelbrot calculatorMandelbrot;
     private ImageCreator imageCreator;
 
@@ -44,7 +40,7 @@ public class Connector {
         CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
 
         //imageCreator = new ImageCreatorCPU<>(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
-        imageCreator = new ImageCreatorGPU<>(dataSet, unit.getDevice(),
+        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),
                 "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
     }
 
@@ -81,7 +77,7 @@ public class Connector {
 
         Region region = new Region(c[0], c[2], c[1], c[3]);
 
-        CalculableArea<ValueMandelbrot> area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
+        CalculableArea area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
 
         if(!area.getClusters().isEmpty()) {
             calculatorMandelbrot.calculate(area, dataSet, threads, maxWaitingTime);

@@ -2,7 +2,6 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -13,11 +12,11 @@ public class CalculatorUnitCPU implements CalculatorUnit {
     private int threads;
     private ExecutorService service;
     private int logicClusterWidth, logicClusterHeight, maxIterations;
-    private DataSet<ValueMandelbrot> currentDataSet;
+    private DataSet currentDataSet;
     private double precision;
     private int depth;
 
-    private ArrayList<Cluster<ValueMandelbrot>> clusters;
+    private ArrayList<Cluster> clusters;
 
     public CalculatorUnitCPU(int threads) {
         setThreads(threads);
@@ -29,13 +28,13 @@ public class CalculatorUnitCPU implements CalculatorUnit {
     }
 
     @Override
-    public void addCluster(Cluster<ValueMandelbrot> cluster) {
+    public void addCluster(Cluster cluster) {
         clusters.add(cluster);
     }
 
     @Override
     public void startCalculation(int logicClusterWidth, int logicClusterHeight,
-                                 int maxIterations, int depth, double precision, DataSet<ValueMandelbrot> dataSet) {
+                                 int maxIterations, int depth, double precision, DataSet dataSet) {
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
         this.maxIterations = maxIterations;
@@ -61,10 +60,10 @@ public class CalculatorUnitCPU implements CalculatorUnit {
     }
 
     private class MT implements Runnable {
-        private final Cluster<ValueMandelbrot> c;
+        private final Cluster c;
         private final double startX, startY;
 
-        public MT(Cluster<ValueMandelbrot> c) {
+        public MT(Cluster c) {
             this.c = c;
             double[] d = currentDataSet.levelGetStartCoordinatesOfCluster(depth, c.getId());
             this.startX = d[0];
@@ -76,8 +75,7 @@ public class CalculatorUnitCPU implements CalculatorUnit {
             long t = System.currentTimeMillis();
             for(int y = 0; y < logicClusterHeight; y++) {
                 for(int x = 0; x < logicClusterWidth; x++) {
-                    c.getValue()[x + y * logicClusterWidth] =
-                            new ValueMandelbrot(calc(startX + x * precision, startY + y * precision));
+                    c.getValue()[x + y * logicClusterWidth] = calc(startX + x * precision, startY + y * precision);
                 }
             }
         }

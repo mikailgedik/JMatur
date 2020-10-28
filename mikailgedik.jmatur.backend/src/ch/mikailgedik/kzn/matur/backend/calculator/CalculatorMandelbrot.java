@@ -3,15 +3,14 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
 import java.util.ArrayList;
 
 public class CalculatorMandelbrot {
     private int logicClusterWidth, logicClusterHeight, iterations;
-    private DataSet<ValueMandelbrot> currentDataSet;
-    private CalculableArea<ValueMandelbrot> area;
+    private DataSet currentDataSet;
+    private CalculableArea area;
     private ArrayList<CalculatorUnit> units;
 
     public CalculatorMandelbrot() {
@@ -27,13 +26,13 @@ public class CalculatorMandelbrot {
         }
     }
 
-    public void calculate(CalculableArea<ValueMandelbrot> area, DataSet<ValueMandelbrot> dataSet, int threads, long maxWaitingTime) {
+    public void calculate(CalculableArea area, DataSet dataSet, int threads, long maxWaitingTime) {
         currentDataSet = dataSet;
         this.area = area;
         prepare();
 
         int unit = 0;
-        for(Cluster<ValueMandelbrot> c: area) {
+        for(Cluster c: area) {
             units.get(unit).addCluster(c);
             unit++;
             unit %= units.size();

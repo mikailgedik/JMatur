@@ -1,7 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-import ch.mikailgedik.kzn.matur.backend.data.value.Value;
-import ch.mikailgedik.kzn.matur.backend.data.value.ValueMandelbrot;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opencl.CL22;
@@ -11,7 +9,7 @@ import java.util.Arrays;
 
 /**Short for MemoryManager*/
 public class MemMan {
-    public static void ensureInGPU(CLDevice device, Cluster<ValueMandelbrot> c) {
+    public static void ensureInGPU(CLDevice device, Cluster c) {
         assert device != null;
         if(c.getDevice() == null) {
             copyToGPU(device, c);
@@ -21,21 +19,21 @@ public class MemMan {
         }
     }
 
-    public static void allocateInGPU(CLDevice device, Cluster<ValueMandelbrot> c, int totalSize) {
+    public static void allocateInGPU(CLDevice device, Cluster c, int bytes) {
         assert c.getGPUAddress() == 0;
         assert c.getDevice() == null;
-        long mem = MemMan.allocateReadWriteMemory(device, totalSize * Integer.BYTES);
+        long mem = MemMan.allocateReadWriteMemory(device, bytes * Integer.BYTES);
         c.setDevice(device, mem);
     }
 
     /** Memory is always read/write*/
-    public static void copyToGPU(CLDevice device, Cluster<ValueMandelbrot> c) {
+    public static void copyToGPU(CLDevice device, Cluster c) {
         assert c.getGPUAddress() == 0;
         assert c.getValue() != null;
 
         int[] val = new int[c.getValue().length];
         for(int i = 0; i < val.length; i++) {
-            val[i] = c.getValue()[i].getValue();
+            val[i] = c.getValue()[i];
         }
 
         int[] error = new int[1];
@@ -48,7 +46,7 @@ public class MemMan {
         check(error);
     }
 
-    public static void copyToRAM(Cluster<ValueMandelbrot> c) {
+    public static void copyToRAM(Cluster c) {
         assert c.getValue() != null;
         assert c.getDevice() != null;
         assert c.getGPUAddress() != 0;
@@ -58,7 +56,7 @@ public class MemMan {
                 data, null, null);
         check(error);
         for(int i = 0; i < data.length; i++) {
-            c.getValue()[i] = new ValueMandelbrot(data[i]);
+            c.getValue()[i] = data[i];
         }
     }
 
@@ -68,16 +66,16 @@ public class MemMan {
         check(error);
     }
 
-    public static void moveToRAM(Cluster<ValueMandelbrot> c) {
+    public static void moveToRAM(Cluster c) {
         copyToRAM(c);
         freeMemoryObject(c.getGPUAddress());
         c.setDevice(null, 0);
     }
 
-    public static void moveToGPU(CLDevice device, Cluster<ValueMandelbrot> c) {
+    public static void moveToGPU(CLDevice device, Cluster c) {
         copyToGPU(device, c);
-        //TODO free memory better: delete whole array instead of c.value[i]
-        Arrays.fill(c.getValue(), null);
+        //TODO free memory better: delete array
+        Arrays.fill(c.getValue(), 0);
     }
 
     public static long allocateReadWriteMemory(CLDevice device, long size) {
