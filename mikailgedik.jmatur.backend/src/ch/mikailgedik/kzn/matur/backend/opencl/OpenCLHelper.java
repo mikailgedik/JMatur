@@ -139,6 +139,7 @@ public class OpenCLHelper {
         ByteBuffer value = ByteBuffer.allocateDirect((int)length.get());
         CL22.clGetDeviceInfo(device, info, value, null);
         check(error);
+
         return value;
     }
 }

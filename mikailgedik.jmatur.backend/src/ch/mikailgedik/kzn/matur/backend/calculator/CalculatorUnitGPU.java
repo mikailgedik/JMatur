@@ -36,7 +36,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
 
         System.out.println("Device info: ");
         System.out.println("\tBuilt in kernels  : " +
-                OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_BUILT_IN_KERNELS) + " " + OpenCLHelper.queryDeviceInfo(device, CL22.CL_DEVICE_BUILT_IN_KERNELS).limit());
+                OpenCLHelper.queryDeviceInfoString(device, CL22.CL_DEVICE_BUILT_IN_KERNELS));
         System.out.println("\tDevice name       : " +
                 OpenCLHelper.queryDeviceInfoString(device, CL22.CL_DEVICE_NAME));
         System.out.println("\tGlobal memory     : " +
