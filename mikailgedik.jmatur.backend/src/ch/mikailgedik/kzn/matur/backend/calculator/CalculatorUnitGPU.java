@@ -1,6 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
@@ -12,7 +11,8 @@ import org.lwjgl.opencl.CL22;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 //TODO use OpenCLHelper
 //TODO decide when memory has to be released. The result is stored in VRAM addressable by Cluster.getGPUAddress()
 public class CalculatorUnitGPU implements CalculatorUnit {
@@ -20,19 +20,18 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     private final CLDevice device;
     private long program, kernel;
     /** Prefix p stands for pointer, these are addresses for memory on the GPU*/
-    private long pMaxIterations, pClusterDimensions, pPrecision, pCoordinates;
+    private long pData, pMaxIterations, pClusterDimensions, pPrecision, pCoordinates, pAbort;
     private int logicClusterWidth, logicClusterHeight, maxIterations;
     private DataSet currentDataSet;
     private double precision;
     private int depth;
-
-    private ArrayList<Cluster> clusters;
+    private final AtomicBoolean abortable;
     private Thread thread;
+    private volatile Calculable calculable;
 
     public CalculatorUnitGPU(long device) {
         this.device = new CLDevice(device);
-        this.clusters = new ArrayList<>();
-
+        abortable = new AtomicBoolean();
         System.out.println("Device info: ");
         System.out.println("\tBuilt in kernels  : " +
                 OpenCLHelper.queryDeviceInfoString(device, CL22.CL_DEVICE_BUILT_IN_KERNELS));
@@ -81,16 +80,11 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     }
 
     public void delete() {
-        //TODO release context
+        //TODO release context?
     }
 
     @Override
-    public void addCluster(Cluster cluster) {
-        clusters.add(cluster);
-    }
-
-    @Override
-    public void startCalculation(int logicClusterWidth, int logicClusterHeight, int maxIterations, int depth, double precision, DataSet dataSet) {
+    public synchronized void configureAndStart(int logicClusterWidth, int logicClusterHeight, int maxIterations, int depth, double precision, DataSet dataSet, CalculatorMandelbrot calculatorMandelbrot) {
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
         this.maxIterations = maxIterations;
@@ -98,27 +92,46 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         this.precision = precision;
         this.currentDataSet = dataSet;
 
-
         this.thread = new Thread(() -> {
             setUnchangedParams();
-            for (Cluster c : clusters) {
-                submit(c);
+            calculable = calculatorMandelbrot.get();
+            while(calculable != null) {
+                abortable.set(true);
+                allocateMemory(calculable);
+                runKernel();
+                releaseMemory();
+
                 CL22.clFinish(device.getCommandQueue());
+                abortable.set(false);
+                boolean accepted = calculatorMandelbrot.accept(calculable, device, pData);
+                if(!accepted) {
+                    //If not accepted, it has been aborted
+                    MemMan.freeMemoryObject(pData);
+                    pData = 0;
+                }
+
+                calculable = calculatorMandelbrot.get();
             }
+
             releaseUnchangedParams();
         });
+        this.thread.setName(""+this.device.getContext());
         this.thread.start();
     }
 
-    private void submit(Cluster c) {
-        allocateMemory(c);
-        runKernel();
-        readBackMemory(c);
-        releaseMemory();
-    }
+    @Override
+    public synchronized void abort(int calcId) {
+        if(abortable.get() && calculable != null && calculable.getCalculatorId() == calcId) {
+            abortable.set(false);
+            IntBuffer berr = BufferUtils.createIntBuffer(1);
+            long abortQueue = (CL22.clCreateCommandQueue(device.getContext(), device.getDevice(), 0L, berr));
+            assert berr.get(0) == CL22.CL_SUCCESS: berr.get(0);
 
-    private void readBackMemory(Cluster c) {
-        MemMan.copyToRAM(c);
+            int error = CL22.clEnqueueWriteBuffer(abortQueue, pAbort, true, 0, new int[]{1}, null,  null);
+            OpenCLHelper.check(error);
+
+            CL22.clReleaseCommandQueue(abortQueue);
+        }
     }
 
     private void runKernel() {
@@ -137,16 +150,17 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         OpenCLHelper.check(error);
     }
 
-    private void releaseMemory() {
+    private synchronized void releaseMemory() {
         MemMan.freeMemoryObject(pCoordinates);
+
+        pCoordinates = 0;
     }
 
     private void setUnchangedParams() {
-
         pMaxIterations = MemMan.allocateAsReadMemory(device, new int[]{this.maxIterations});
         pClusterDimensions = MemMan.allocateAsReadMemory(device, new int[]{logicClusterWidth, logicClusterHeight});
         pPrecision = MemMan.allocateAsReadMemory(device, new double[]{this.precision});
-
+        pAbort = MemMan.allocateAsReadMemory(device, new int[]{0});
 
         int[] error = new int[1];
         error[0] = CL22.clSetKernelArg1p(kernel, 2, pMaxIterations);
@@ -163,30 +177,40 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         MemMan.freeMemoryObject(pClusterDimensions);
         MemMan.freeMemoryObject(pMaxIterations);
         MemMan.freeMemoryObject(pPrecision);
+        MemMan.freeMemoryObject(pAbort);
+
+        pClusterDimensions = 0;
+        pMaxIterations = 0;
+        pPrecision = 0;
+        pAbort = 0;
     }
 
-    private void allocateMemory(Cluster c) {
+    private void allocateMemory(Calculable c) {
         double[] start = currentDataSet.
-                levelGetStartCoordinatesOfCluster(depth, c.getId());
+                levelGetStartCoordinatesOfCluster(depth, c.getClusterId());
 
         pCoordinates = MemMan.allocateAsReadMemory(device, start);
 
-        MemMan.allocateInGPU(device, c, logicClusterWidth * logicClusterHeight);
-
+        pData = MemMan.allocateReadWriteMemory(device, Integer.BYTES * logicClusterWidth * logicClusterHeight);
         int[] error = new int[1];
+
+        error[0] = CL22.clEnqueueWriteBuffer(device.getCommandQueue(), pAbort, true, 0, new int[]{0}, null, null);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
         error[0] = CL22.clSetKernelArg1p(kernel, 0, pCoordinates);
         assert error[0] == CL22.CL_SUCCESS: error[0];
 
-        error[0] = CL22.clSetKernelArg1p(kernel, 1, c.getGPUAddress());
+        error[0] = CL22.clSetKernelArg1p(kernel, 1, pData);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
+        error[0] = CL22.clSetKernelArg1p(kernel, 5, pAbort);
         assert error[0] == CL22.CL_SUCCESS: error[0];
     }
 
-
     @Override
-    public void awaitTermination(long maxWaitingTime) {
+    public void awaitTerminationAndCleanup(long maxWaitingTime) {
         try {
             thread.join(maxWaitingTime);
-            clusters.clear();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

@@ -6,7 +6,9 @@ import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.render.ColorFunction;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
+import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorGPU;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
@@ -39,9 +41,8 @@ public class Connector {
 
         CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
 
-        //imageCreator = new ImageCreatorCPU<>(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
-        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),
-                "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
+        //imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
+        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
     }
 
     public Object getSetting(String name) {

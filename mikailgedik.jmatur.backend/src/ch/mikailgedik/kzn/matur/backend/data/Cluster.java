@@ -3,7 +3,7 @@ package ch.mikailgedik.kzn.matur.backend.data;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 
 public class Cluster {
-    private final int[] value;
+    private int[] value;
     private final int id;
     private long gpuAddress;
     private CLDevice clDevice;
@@ -15,6 +15,10 @@ public class Cluster {
 
     public int[] getValue() {
         return value;
+    }
+
+    public void setValue(int[] value) {
+        this.value = value;
     }
 
     public int getId() {

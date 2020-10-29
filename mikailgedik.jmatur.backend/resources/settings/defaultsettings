@@ -21,10 +21,10 @@ string.setting.render.colorFunction=mandelbrotHSB
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=3000
+int.setting.calculation.startIterations=2000
 string.setting.calculation.iterationModel=static
 #Max CPU threads
-int.setting.calculation.maxThreads=6
+int.setting.calculation.maxThreads=24
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000

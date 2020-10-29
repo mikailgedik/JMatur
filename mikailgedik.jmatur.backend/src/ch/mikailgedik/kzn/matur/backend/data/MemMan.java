@@ -47,17 +47,14 @@ public class MemMan {
     }
 
     public static void copyToRAM(Cluster c) {
+        //TODO make c.getValue() null to save RAM
         assert c.getValue() != null;
         assert c.getDevice() != null;
         assert c.getGPUAddress() != 0;
 
-        int[] data = new int[c.getValue().length];
         int error = CL22.clEnqueueReadBuffer(c.getDevice().getCommandQueue(), c.getGPUAddress(), true, 0L,
-                data, null, null);
+                c.getValue(), null, null);
         check(error);
-        for(int i = 0; i < data.length; i++) {
-            c.getValue()[i] = data[i];
-        }
     }
 
     public static void copyToArray(CLDevice device, long pointer, int[] result) {

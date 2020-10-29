@@ -3,80 +3,100 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 
-import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class CalculatorUnitCPU implements CalculatorUnit {
-    private int threads;
-    private ExecutorService service;
     private int logicClusterWidth, logicClusterHeight, maxIterations;
     private DataSet currentDataSet;
     private double precision;
     private int depth;
+    private WorkThread[] threads;
+    private int thrd;
 
-    private ArrayList<Cluster> clusters;
-
-    public CalculatorUnitCPU(int threads) {
-        setThreads(threads);
-        this.clusters = new ArrayList<>();
+    private CalculatorMandelbrot calculatorMandelbrot;
+    public CalculatorUnitCPU() {
+        setThreads(0);
     }
 
     public void setThreads(int threads) {
-        this.threads = threads;
+        this.thrd = threads;
     }
 
     @Override
-    public void addCluster(Cluster cluster) {
-        clusters.add(cluster);
-    }
-
-    @Override
-    public void startCalculation(int logicClusterWidth, int logicClusterHeight,
-                                 int maxIterations, int depth, double precision, DataSet dataSet) {
+    public synchronized void configureAndStart(int logicClusterWidth, int logicClusterHeight,
+                                  int maxIterations, int depth, double precision, DataSet dataSet, CalculatorMandelbrot calculatorMandelbrot) {
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
         this.maxIterations = maxIterations;
         this.depth = depth;
         this.precision = precision;
         this.currentDataSet = dataSet;
-        service = Executors.newFixedThreadPool(threads);
+        this.calculatorMandelbrot = calculatorMandelbrot;
 
-        clusters.forEach(c -> service.submit(new CalculatorUnitCPU.MT(c)));
-        service.shutdown();
-    }
+        this.threads = new WorkThread[thrd];
 
-    @Override
-    public void awaitTermination(long maxWaitingTime) {
-        try {
-            service.awaitTermination(maxWaitingTime, TimeUnit.MILLISECONDS);
-            clusters.clear();
-        } catch (InterruptedException e) {
-            //TODO correct behaviour when InterruptedException is thrown?
-            service.shutdownNow();
-            Thread.currentThread().interrupt();
+        for(int i = 0; i < threads.length; i++) {
+            threads[i] = new WorkThread();
+            threads[i].start();
         }
     }
 
-    private class MT implements Runnable {
-        private final Cluster c;
-        private final double startX, startY;
+    @Override
+    public void awaitTerminationAndCleanup(long maxWaitingTime) throws InterruptedException {
+        for (WorkThread thread : threads) {
+            thread.join(maxWaitingTime);
+        }
+        threads = null;
+        currentDataSet = null;
+        calculatorMandelbrot = null;
+    }
 
-        public MT(Cluster c) {
-            this.c = c;
-            double[] d = currentDataSet.levelGetStartCoordinatesOfCluster(depth, c.getId());
-            this.startX = d[0];
-            this.startY = d[1];
+    @Override
+    public synchronized void abort(int calcId) {
+        if(threads != null) {
+            for(WorkThread t: threads) {
+                assert t != null;
+                if(t.calculable != null && t.calculable.getCalculatorId() == calcId) {
+                    t.interrupt();
+                }
+            }
+        }
+    }
+
+    private class WorkThread extends Thread {
+        private volatile Calculable calculable;
+
+        public WorkThread() {
         }
 
         @Override
         public void run() {
-            long t = System.currentTimeMillis();
-            for(int y = 0; y < logicClusterHeight; y++) {
-                for(int x = 0; x < logicClusterWidth; x++) {
-                    c.getValue()[x + y * logicClusterWidth] = calc(startX + x * precision, startY + y * precision);
+            calculable = calculatorMandelbrot.get();
+            while(calculable != null) {
+                try {
+                    double[] d = currentDataSet.levelGetStartCoordinatesOfCluster(depth, calculable.getClusterId());
+                    double startX, startY;
+                    startX = d[0];
+                    startY = d[1];
+                    int[] val = new int[logicClusterHeight * logicClusterWidth];
+                    for(int y = 0; y < logicClusterHeight; y++) {
+                        for(int x = 0; x < logicClusterWidth; x++) {
+                            val[x + y * logicClusterWidth] = calc(startX + x * precision, startY + y * precision);
+                            if(Thread.interrupted()) {
+                                throw new InterruptedException();
+                            }
+                        }
+                    }
+                    if(!calculatorMandelbrot.accept(calculable, val)) {
+                        throw new InterruptedException();
+                    }
+                } catch(InterruptedException e) {
+                    //Thread is only interrupted if another CalculatorUnit has finished the cluster before this thread could.
+                    //Just get the next calculable
                 }
+                calculable = calculatorMandelbrot.get();
             }
         }
     }

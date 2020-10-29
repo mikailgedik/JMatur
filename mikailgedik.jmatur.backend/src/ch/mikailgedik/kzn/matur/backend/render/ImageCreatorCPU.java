@@ -5,6 +5,8 @@ import ch.mikailgedik.kzn.matur.backend.data.*;
 
 import java.util.ArrayList;
 
+/** Use {@link ImageCreatorGPU} instead, faster*/
+@Deprecated
 public class ImageCreatorCPU extends ImageCreator {
     private ColorFunction colorFunction;
     private DataSet dataSet;

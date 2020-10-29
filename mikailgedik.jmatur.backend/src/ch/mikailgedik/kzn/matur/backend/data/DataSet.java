@@ -162,10 +162,10 @@ public abstract class DataSet {
     }
 
     public Cluster createCluster(int id) {
-        return new Cluster(createArray(logicClusterWidth * logicClusterHeight), id);
+        return new Cluster(new int[logicClusterWidth * logicClusterHeight], id);
+        //TODO initialize clusters with null and let calculators create data
+        //return new Cluster(null, id);
     }
-
-    protected abstract int[] createArray(int length);
 
     public Region dataGetRegion(LogicalRegion logicalRegion) {
         double[] start = levelGetStartCoordinatesOfCluster(logicalRegion.getDepth(), logicalRegion.getStartX(), logicalRegion.getStartY());
@@ -293,11 +293,6 @@ public abstract class DataSet {
     private static class DataSetMandelbrot extends DataSet {
         public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
             super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
-        }
-
-        @Override
-        protected int[] createArray(int length) {
-            return new int[length];
         }
     }
 
