@@ -8,9 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class WindowFrontEnd extends JFrame {
     private FractalCanvas canvas;
@@ -130,7 +128,6 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void refresh() {
-        connector.calculate();
         connector.createImage();
         Screen image = connector.getImage();
 
@@ -263,16 +260,35 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void fileOpen(ActionEvent actionEvent) {
-        assert false;
+        try {
+            UIManager.LookAndFeelInfo[] i = UIManager.getInstalledLookAndFeels();
+            UIManager.setLookAndFeel(i[(int)(Math.random() * i.length)].getClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+        JFileChooser dialog = new JFileChooser();
+        dialog.setDialogTitle("Save in directory");
+
+        dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        dialog.setMultiSelectionEnabled(false);
+        if(dialog.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            connector.readData(dialog.getSelectedFile());
+        }
     }
 
     private void fileSave(ActionEvent actionEvent) {
-        JFileChooser chooser = new JFileChooser();
-        int option = chooser.showOpenDialog(this);
-        if(option == JFileChooser.APPROVE_OPTION) {
-            String file = chooser.getSelectedFile().getAbsolutePath();
-            connector.saveImage(file);
-            System.out.println("File saved to " + file);
+        try {
+            UIManager.LookAndFeelInfo[] i = UIManager.getInstalledLookAndFeels();
+            UIManager.setLookAndFeel(i[(int)(Math.random() * i.length)].getClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+        JFileChooser dialog = new JFileChooser();
+        dialog.setDialogTitle("Load directory");
+        dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        dialog.setMultiSelectionEnabled(false);
+        if(dialog.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            connector.saveData(dialog.getSelectedFile());
         }
     }
 

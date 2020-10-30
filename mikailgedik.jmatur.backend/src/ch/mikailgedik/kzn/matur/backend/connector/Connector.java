@@ -12,6 +12,7 @@ import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorGPU;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.TreeMap;
 
@@ -66,15 +67,26 @@ public class Connector {
         settingsManager.addSetting(name, value);
     }
 
+    @Deprecated
     public void calculate() {
         //TODO remove
+        System.out.println("Calculate does nothing");
+    }
+
+    public void saveData(File basePath) {
         try {
             dataSet.saveAll("/home/mikail/Desktop/test");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void readData(File basePath) {
+        try {
             dataSet.readAll("/home/mikail/Desktop/test");
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        System.out.println("Calculate does nothing");
     }
 
     public synchronized void createImage() {
