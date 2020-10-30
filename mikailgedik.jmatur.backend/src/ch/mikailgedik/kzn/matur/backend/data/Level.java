@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class Level {
+public class Level implements Serializable {
     private final ArrayList<Cluster> clusters;
     private final int depth;
     //Amount of clusters in x-direction
@@ -64,7 +64,7 @@ public class Level {
     }
 
     private static Comparator<Cluster> comparator = (o1, o2) -> {
-        assert o1.getId() != o2.getId(): "Two objects with same id";
+        assert o1.getId() != o2.getId(): "Two objects with same id:" + o1.getId() + ", " + o2.getId();
         return o1.getId() < o2.getId() ? -1: 1;
     };
 }

@@ -1,13 +1,9 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
-import org.lwjgl.system.CallbackI;
-
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 
 
 public abstract class DataSet {
@@ -167,7 +163,15 @@ public abstract class DataSet {
                 (int) Math.floor(startY * levelCalculateLogicLevelHeight(depth))};
     }
 
-    public Cluster createCluster(int id) {
+    private ArrayList<int[]> allClus = new ArrayList<>();
+
+    public Cluster createCluster(int depth, int id) {
+        for(int[] i: allClus) {
+            if(i[0] == depth && i[1] == id)
+                assert false: depth + ", " + id;
+        }
+
+        allClus.add(new int[]{depth, id});
         return new Cluster(null, id);
     }
 
@@ -244,7 +248,7 @@ public abstract class DataSet {
                         curr = it.next();
                     }
                     if(curr.getId() > idToCalculate || (curr.getId() < idToCalculate && !it.hasNext())) {
-                        list.add(createCluster(idToCalculate));
+                        list.add(createCluster(r.getDepth(), idToCalculate));
                     }
                     //TODO exit loop and add remaining elements manually when it.hasNext() returns false
                     //Works too this way but is less performant
@@ -255,7 +259,7 @@ public abstract class DataSet {
         } else {
             for(int y = r.getStartY(); y < r.getEndY(); y++) {
                 for(int x = r.getStartX(); x < r.getEndX(); x++) {
-                    list.add(createCluster(x + y * l.getLogicalWidth()));
+                    list.add(createCluster(r.getDepth(), x + y * l.getLogicalWidth()));
                 }
             }
         }
@@ -284,6 +288,72 @@ public abstract class DataSet {
 
     public int getLogicClusterHeight() {
         return logicClusterHeight;
+    }
+
+    public void saveAll(String baseDir) throws IOException {
+        for(Level l: levels) {
+            writeLevel(baseDir, l);
+        }
+    }
+
+    private void writeLevel(String baseDir, Level l)throws IOException  {
+        File levelDir = new File(baseDir + "/" + l.getDepth());
+        levelDir.mkdirs();
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(levelDir + "/level.bin"));
+
+        out.writeObject(new Object[]{l.getDepth(), l.getLogicalWidth(), l.getLogicalHeight(),
+        l.getPrecision(), l.getIterations()});
+
+        out.close();
+
+        for(Cluster c: l.getClusters()) {
+            writeCluster(levelDir, c);
+        }
+    }
+
+    private void writeCluster(File levelDir, Cluster c) throws IOException {
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(levelDir + "/" + c.getId()));
+        out.writeObject(c);
+        out.close();
+    }
+
+    public void readAll(String baseDir) throws IOException, ClassNotFoundException {
+        this.levels.clear();
+
+        ArrayList<Level> read = new ArrayList<>();
+
+        for(File lDir: Objects.requireNonNull(new File(baseDir).listFiles())) {
+            read.add(readLevel(lDir));
+        }
+
+        this.levels.addAll(read);
+        this.levels.sort((l1,l2) -> {
+            assert l1.getDepth() != l2.getDepth();
+            return l1.getDepth() < l2.getDepth() ? -1 : 1;
+        });
+    }
+
+    private Level readLevel(File lDir) throws IOException, ClassNotFoundException{
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream(lDir + "/level.bin"));
+        Object[] lPara = (Object[]) in.readObject();
+        in.close();
+
+        Level l = new Level((int)lPara[0], (int)lPara[1], (int)lPara[2], (double)lPara[3], (int)lPara[4]);
+
+        ArrayList<Cluster> clus = new ArrayList<>();
+
+        for(File cFile: Objects.requireNonNull(lDir.listFiles())) {
+            if(!cFile.getName().equals("level.bin")) {
+                int id = Integer.parseInt(cFile.getName());
+                in = new ObjectInputStream(new FileInputStream(cFile));
+                Cluster c = (Cluster) in.readObject();
+                assert c.getId() == id;
+                clus.add(c);
+                in.close();
+            }
+        }
+        l.addAll(clus);
+        return l;
     }
 
     public static DataSet createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,

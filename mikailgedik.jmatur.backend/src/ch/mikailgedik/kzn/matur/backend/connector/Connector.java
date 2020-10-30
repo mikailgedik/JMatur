@@ -68,6 +68,12 @@ public class Connector {
 
     public void calculate() {
         //TODO remove
+        try {
+            dataSet.saveAll("/home/mikail/Desktop/test");
+            dataSet.readAll("/home/mikail/Desktop/test");
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
         System.out.println("Calculate does nothing");
     }
 
