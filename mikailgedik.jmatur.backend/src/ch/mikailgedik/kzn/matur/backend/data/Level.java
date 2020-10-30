@@ -1,5 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -62,7 +63,7 @@ public class Level {
         this.clusters.sort(comparator);
     }
 
-    private Comparator<Cluster> comparator = (o1, o2) -> {
+    private static Comparator<Cluster> comparator = (o1, o2) -> {
         assert o1.getId() != o2.getId(): "Two objects with same id";
         return o1.getId() < o2.getId() ? -1: 1;
     };

@@ -1,5 +1,11 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
+import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import org.lwjgl.system.CallbackI;
+
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -162,9 +168,7 @@ public abstract class DataSet {
     }
 
     public Cluster createCluster(int id) {
-        return new Cluster(new int[logicClusterWidth * logicClusterHeight], id);
-        //TODO initialize clusters with null and let calculators create data
-        //return new Cluster(null, id);
+        return new Cluster(null, id);
     }
 
     public Region dataGetRegion(LogicalRegion logicalRegion) {
@@ -281,7 +285,6 @@ public abstract class DataSet {
     public int getLogicClusterHeight() {
         return logicClusterHeight;
     }
-
 
     public static DataSet createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
                                                          int startLogicLevelHeight, int clusterFactor, double regionStartX,

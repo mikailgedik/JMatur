@@ -1,6 +1,8 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-public class LogicalRegion {
+import java.io.Serializable;
+
+public class LogicalRegion implements Serializable {
     private final int startX, startY, endX, endY;
     private final int depth;
 

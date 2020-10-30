@@ -90,7 +90,7 @@ public class ImageResultGPU extends ImageResult {
 
     @Override
     public void accept(Cluster c, int clusterX, int clusterY) {
-        MemMan.ensureInGPU(device, c);
+        MemMan.ensureInGPU(device, c, getDataSet().getLogicClusterHeight() * getDataSet().getLogicClusterWidth());
         int xOffset = getDataSet().getLogicClusterWidth()* (clusterX - getLogicalRegion().getStartX()),
                 yOffset = getDataSet().getLogicClusterHeight()*(clusterY - getLogicalRegion().getStartY());
 

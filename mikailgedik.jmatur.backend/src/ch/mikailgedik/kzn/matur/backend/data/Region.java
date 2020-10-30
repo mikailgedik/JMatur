@@ -1,6 +1,8 @@
 package ch.mikailgedik.kzn.matur.backend.data;
 
-public class Region {
+import java.io.Serializable;
+
+public class Region implements Serializable {
     private final double startX, startY, endX, endY;
 
     public Region(double startX, double startY, double endX, double endY) {

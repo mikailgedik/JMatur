@@ -5,17 +5,22 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opencl.CL22;
 
 import java.nio.IntBuffer;
-import java.util.Arrays;
 
 /**Short for MemoryManager*/
 public class MemMan {
-    public static void ensureInGPU(CLDevice device, Cluster c) {
+    public static void ensureInGPU(CLDevice device, Cluster c, int clusterLength) {
         assert device != null;
         if(c.getDevice() == null) {
             copyToGPU(device, c);
         } else if (c.getDevice() != device){
-            moveToRAM(c);
+            moveToRAM(c, clusterLength);
             moveToGPU(device, c);
+        }
+    }
+
+    public static void ensureInRAM(Cluster c, int clusterLength) {
+        if(c.getValue() == null) {
+            copyToRAM(c, clusterLength);
         }
     }
 
@@ -46,11 +51,13 @@ public class MemMan {
         check(error);
     }
 
-    public static void copyToRAM(Cluster c) {
+    public static void copyToRAM(Cluster c, int clusterLength) {
         //TODO make c.getValue() null to save RAM
-        assert c.getValue() != null;
+        assert c.getValue() == null;
         assert c.getDevice() != null;
         assert c.getGPUAddress() != 0;
+
+        c.setValue(new int[clusterLength]);
 
         int error = CL22.clEnqueueReadBuffer(c.getDevice().getCommandQueue(), c.getGPUAddress(), true, 0L,
                 c.getValue(), null, null);
@@ -63,16 +70,15 @@ public class MemMan {
         check(error);
     }
 
-    public static void moveToRAM(Cluster c) {
-        copyToRAM(c);
+    public static void moveToRAM(Cluster c, int clusterLength) {
+        copyToRAM(c, clusterLength);
         freeMemoryObject(c.getGPUAddress());
         c.setDevice(null, 0);
     }
 
     public static void moveToGPU(CLDevice device, Cluster c) {
         copyToGPU(device, c);
-        //TODO free memory better: delete array
-        Arrays.fill(c.getValue(), 0);
+        c.setValue(null);
     }
 
     public static long allocateReadWriteMemory(CLDevice device, long size) {

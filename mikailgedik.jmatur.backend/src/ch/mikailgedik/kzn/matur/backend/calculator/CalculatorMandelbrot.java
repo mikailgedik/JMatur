@@ -73,7 +73,7 @@ public class CalculatorMandelbrot {
             if(!hasDone[cal.getCalculatorId()]) {
                 area.getClusters().get(cal.getCalculatorId()).setDevice(device, address);
                 acceptInternal(cal.getCalculatorId());
-                MemMan.moveToRAM(area.getClusters().get(cal.getCalculatorId()));
+                MemMan.moveToRAM(area.getClusters().get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
                 return true;
             } else {
                 return false;

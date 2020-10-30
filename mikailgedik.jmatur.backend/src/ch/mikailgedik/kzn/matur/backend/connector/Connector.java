@@ -12,6 +12,7 @@ import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorGPU;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
+import java.io.IOException;
 import java.util.TreeMap;
 
 /** This class connects the frontend with the backend */
@@ -37,6 +38,7 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
+
         calculatorMandelbrot = new CalculatorMandelbrot();
 
         CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
