@@ -3,10 +3,12 @@ package ch.mikailgedik.kzn.matur.frontend.window;
 import ch.mikailgedik.kzn.matur.backend.connector.Connector;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
+import ch.mikailgedik.kzn.matur.backend.connector.SlaveConnector;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
@@ -308,7 +310,14 @@ public class WindowFrontEnd extends JFrame {
         this.setLayout(layout);
     }
 
-    public static void main(String[] args) throws InvocationTargetException, InterruptedException {
-        SwingUtilities.invokeAndWait(WindowFrontEnd::new);
+    public static void main(String[] args) throws InvocationTargetException, InterruptedException, IOException {
+        if(args.length == 0) {
+            SwingUtilities.invokeAndWait(WindowFrontEnd::new);
+        } else {
+            for(String s: args) {
+                System.out.println(s);
+            }
+            new SlaveConnector("127.0.0.1", 5000);
+        }
     }
 }

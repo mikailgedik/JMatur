@@ -1,6 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
@@ -22,9 +21,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     /** Prefix p stands for pointer, these are addresses for memory on the GPU*/
     private long pData, pMaxIterations, pClusterDimensions, pPrecision, pCoordinates, pAbort;
     private int logicClusterWidth, logicClusterHeight, maxIterations;
-    private DataSet currentDataSet;
     private double precision;
-    private int depth;
     private final AtomicBoolean abortable;
     private Thread thread;
     private volatile Calculable calculable;
@@ -84,13 +81,12 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     }
 
     @Override
-    public synchronized void configureAndStart(int logicClusterWidth, int logicClusterHeight, int maxIterations, int depth, double precision, DataSet dataSet, CalculatorMandelbrot calculatorMandelbrot) {
-        this.logicClusterWidth = logicClusterWidth;
-        this.logicClusterHeight = logicClusterHeight;
-        this.maxIterations = maxIterations;
-        this.depth = depth;
-        this.precision = precision;
-        this.currentDataSet = dataSet;
+    public synchronized void configureAndStart(CalculatorConfiguration configuration) {
+        this.logicClusterWidth = configuration.getLogicClusterWidth();
+        this.logicClusterHeight = configuration.getLogicClusterHeight();
+        this.maxIterations = configuration.getMaxIterations();
+        this.precision = configuration.getPrecision();
+        CalculatorMandelbrot calculatorMandelbrot = configuration.getCalculatorMandelbrot();
 
         this.thread = new Thread(() -> {
             setUnchangedParams();
@@ -186,9 +182,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     }
 
     private void allocateMemory(Calculable c) {
-        double[] start = currentDataSet.
-                levelGetStartCoordinatesOfCluster(depth, c.getClusterId());
-
+        double[] start = new double[] {c.getStartX(), c.getStartY()};
         pCoordinates = MemMan.allocateAsReadMemory(device, start);
 
         pData = MemMan.allocateReadWriteMemory(device, Integer.BYTES * logicClusterWidth * logicClusterHeight);

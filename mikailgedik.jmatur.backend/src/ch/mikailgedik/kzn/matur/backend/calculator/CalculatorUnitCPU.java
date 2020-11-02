@@ -1,17 +1,8 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.backend.data.Cluster;
-import ch.mikailgedik.kzn.matur.backend.data.DataSet;
-
-import java.util.Arrays;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 public class CalculatorUnitCPU implements CalculatorUnit {
     private int logicClusterWidth, logicClusterHeight, maxIterations;
-    private DataSet currentDataSet;
     private double precision;
-    private int depth;
     private WorkThread[] threads;
     private int thrd;
 
@@ -25,15 +16,12 @@ public class CalculatorUnitCPU implements CalculatorUnit {
     }
 
     @Override
-    public synchronized void configureAndStart(int logicClusterWidth, int logicClusterHeight,
-                                  int maxIterations, int depth, double precision, DataSet dataSet, CalculatorMandelbrot calculatorMandelbrot) {
-        this.logicClusterWidth = logicClusterWidth;
-        this.logicClusterHeight = logicClusterHeight;
-        this.maxIterations = maxIterations;
-        this.depth = depth;
-        this.precision = precision;
-        this.currentDataSet = dataSet;
-        this.calculatorMandelbrot = calculatorMandelbrot;
+    public synchronized void configureAndStart(CalculatorConfiguration configuration) {
+        this.logicClusterWidth = configuration.getLogicClusterWidth();
+        this.logicClusterHeight = configuration.getLogicClusterHeight();
+        this.maxIterations = configuration.getMaxIterations();
+        this.precision = configuration.getPrecision();
+        this.calculatorMandelbrot = configuration.getCalculatorMandelbrot();
 
         this.threads = new WorkThread[thrd];
 
@@ -49,7 +37,6 @@ public class CalculatorUnitCPU implements CalculatorUnit {
             thread.join(maxWaitingTime);
         }
         threads = null;
-        currentDataSet = null;
         calculatorMandelbrot = null;
     }
 
@@ -76,10 +63,7 @@ public class CalculatorUnitCPU implements CalculatorUnit {
             calculable = calculatorMandelbrot.get();
             while(calculable != null) {
                 try {
-                    double[] d = currentDataSet.levelGetStartCoordinatesOfCluster(depth, calculable.getClusterId());
-                    double startX, startY;
-                    startX = d[0];
-                    startY = d[1];
+                    double startX = calculable.getStartX(), startY = calculable.getStartY();
                     int[] val = new int[logicClusterHeight * logicClusterWidth];
                     for(int y = 0; y < logicClusterHeight; y++) {
                         for(int x = 0; x < logicClusterWidth; x++) {
