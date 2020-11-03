@@ -41,11 +41,10 @@ public class Connector {
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
 
         calculatorMandelbrot = new CalculatorMandelbrotArea();
+        //imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
 
-        //CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
-
-        imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
-        //imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
+        CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
+        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
     }
 
     public Object getSetting(String name) {
@@ -75,7 +74,7 @@ public class Connector {
 
     public void saveData(File basePath) {
         try {
-            dataSet.saveAll("/home/mikail/Desktop/test");
+            dataSet.saveAll(basePath.getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -83,7 +82,7 @@ public class Connector {
 
     public void readData(File basePath) {
         try {
-            dataSet.readAll("/home/mikail/Desktop/test");
+            dataSet.readAll(basePath.getAbsolutePath());
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -106,7 +105,11 @@ public class Connector {
         }
 
         image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
+
+        FileManager.getFileManager().saveImage("/home/mikail/Desktop/out/file" + (counter++) +".png", image);
     }
+
+    static int counter = 0;
 
     public Screen getImage() {
         return image;
