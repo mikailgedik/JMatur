@@ -58,6 +58,7 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         if(server != null) {
             System.out.println("New unit");
         }
+
     }
 
     public void calculate(CalculableArea area, DataSet dataSet, int threads, long maxWaitingTime) {

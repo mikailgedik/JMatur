@@ -10,18 +10,14 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
     private Thread thread;
     private CalculatorConfiguration configuration;
 
-    public CalculatorUnitExternMaster(SocketAdapter socket) throws IOException {
+    public CalculatorUnitExternMaster(SocketAdapter socket) {
         this.socket = socket;
     }
 
     @Override
     public synchronized void configureAndStart(CalculatorConfiguration configuration) {
         this.configuration = configuration;
-        try {
-            socket.sendConfiguration(configuration);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        socket.sendConfiguration(configuration);
         thread = new Thread(() -> {
             Signal o;
             try {
@@ -47,7 +43,7 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
         thread.start();
     }
 
-    private void sendNext(int amount) throws IOException {
+    private void sendNext(int amount) {
         Calculable[] calculables = new Calculable[amount];
         for(int i = 0; i < calculables.length; i++) {
             calculables[i] = configuration.getCalculatorMandelbrot().get();
@@ -67,10 +63,6 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
 
     @Override
     public void abort(int calcId) {
-        try {
-            socket.sendSignalAbort(calcId);
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
+        socket.sendSignalAbort(calcId);
     }
 }

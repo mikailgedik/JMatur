@@ -5,6 +5,7 @@ import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.LinkedList;
 import java.util.Stack;
 
 public class SocketAdapter {
@@ -19,18 +20,18 @@ public class SocketAdapter {
     private final DataInputStream in;
     private final DataOutputStream out;
 
-    /*
+
     private final Thread outPutThread;
-    private final Stack<Signal> signals;
-    */
+    private final LinkedList<Signal> signals;
+
 
     public SocketAdapter(Socket socket) throws IOException {
         this.socket = socket;
 
         out = new DataOutputStream(socket.getOutputStream());
         in = new DataInputStream(socket.getInputStream());
-        /*
-        signals = new Stack<>();
+
+        signals = new LinkedList<>();
         outPutThread = new Thread(() -> {
             try {
                 while(true) {
@@ -60,8 +61,9 @@ public class SocketAdapter {
                 e.printStackTrace();
             }
         });
+        outPutThread.setDaemon(true);
         outPutThread.start();
-         */
+
     }
 
     public void sendSignalAbortInter(int calcId) throws IOException {
@@ -69,7 +71,7 @@ public class SocketAdapter {
             out.writeInt(ABORT);
             out.writeInt(calcId);
             out.flush();
-            System.out.println("Sent abort");
+            //System.out.println("Sent abort");
         }
     }
 
@@ -83,7 +85,7 @@ public class SocketAdapter {
             //Do not write CalculatorMandelbrot field!
 
             out.flush();
-            System.out.println("Sent conf");
+            //System.out.println("Sent conf");
         }
     }
 
@@ -101,7 +103,7 @@ public class SocketAdapter {
                 }
             }
             out.flush();
-            System.out.println("Sent calcs:" + calculable.length);
+            //System.out.println("Sent calcs:" + calculable.length);
         }
     }
 
@@ -117,7 +119,7 @@ public class SocketAdapter {
             }
 
             out.flush();
-            System.out.println("Sent resu");
+            //System.out.println("Sent resu");
         }
     }
 
@@ -125,7 +127,7 @@ public class SocketAdapter {
         synchronized (out) {
             out.writeInt(DONE);
             out.flush();
-            System.out.println("Sent done");
+            //System.out.println("Sent done");
         }
 
     }
@@ -135,33 +137,32 @@ public class SocketAdapter {
             out.writeInt(GET);
             out.writeInt(amount);
             out.flush();
-            System.out.println("Sent next");
+            //System.out.println("Sent next");
         }
     }
 
-    /*
-    public void sendSignalAbort(int calcId) throws IOException {
+    public void sendSignalAbort(int calcId) {
         synchronized (signals) {
             signals.add(new Signal.SignalAbort(calcId));
             signals.notify();
         }
     }
 
-    public void sendConfiguration(CalculatorUnit.CalculatorConfiguration configuration) throws IOException {
+    public void sendConfiguration(CalculatorUnit.CalculatorConfiguration configuration) {
         synchronized (signals) {
             signals.add(new Signal.SignalConfigure(configuration));
             signals.notify();
         }
     }
 
-    public void sendCalculable(Calculable[] calculable) throws IOException {
+    public void sendCalculable(Calculable[] calculable) {
         synchronized (signals) {
             signals.add(new Signal.SignalCalculable(calculable));
             signals.notify();
         }
     }
 
-    public void sendResult(Calculable calculable, int[] data) throws IOException {
+    public void sendResult(Calculable calculable, int[] data) {
         synchronized (signals) {
             signals.add(new Signal.SignalResult(new Calculable.CalculableResult(
                     calculable.getCalculatorId(),
@@ -172,25 +173,24 @@ public class SocketAdapter {
         }
     }
 
-    public void sendDone() throws IOException {
+    public void sendDone() {
         synchronized (signals) {
             signals.add(new Signal.SignalDone());
             signals.notify();
         }
     }
 
-    public void requestNext(int amount) throws IOException {
+    public void requestNext(int amount) {
         synchronized (signals) {
             signals.add(new Signal.SignalGet(amount));
             signals.notify();
         }
     }
-     */
 
     public Signal readSignal() throws IOException {
         synchronized (in) {
             int type = in.readInt();
-            System.out.println("Read sig: " + type);
+            //System.out.println("Read sig: " + type);
 
             return switch (type) {
                 case RESULT -> getResult();
@@ -235,10 +235,10 @@ public class SocketAdapter {
                 double startX = in.readDouble();
                 double startY = in.readDouble();
 
-                System.out.println("Read calc: " + id + " " + startX + " " + startY);
+                //System.out.println("Read calc: " + id + " " + startX + " " + startY);
                 calculables[i] = new Calculable(id, startX, startY);
             } else {
-                System.out.println("Read calc: null");
+                //System.out.println("Read calc: null");
                 calculables[i] = null;
             }
         }

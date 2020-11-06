@@ -74,7 +74,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
                 }
                 socket.sendDone();
                 calculables.clear();
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
@@ -94,11 +94,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
 
     @Override
     public boolean accept(Calculable cal, int[] clusterData) {
-        try {
-            socket.sendResult(cal, clusterData);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        socket.sendResult(cal, clusterData);
         return false;//Delete local copy
     }
 
@@ -107,11 +103,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
         Cluster c = new Cluster(null, 0);
         c.setDevice(device, address);
         MemMan.copyToRAM(c, configuration.getLogicClusterHeight() * configuration.getLogicClusterWidth());
-        try {
-            socket.sendResult(cal, c.getValue());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        socket.sendResult(cal, c.getValue());
         return false;//Delete local copy
     }
 
@@ -129,7 +121,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
                         pendingRequests.addAndGet(req);
                     }
                     calculables.wait();
-                } catch (IOException | InterruptedException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
