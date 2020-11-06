@@ -16,6 +16,12 @@ public interface Signal extends Serializable{
     }
 
     class SignalGet implements Signal {
+        public final int amount;
+
+        public SignalGet(int amount) {
+            this.amount = amount;
+        }
+
         //Empty
     }
 
@@ -33,9 +39,9 @@ public interface Signal extends Serializable{
     }
 
     class SignalCalculable implements Signal {
-        public final Calculable calculable;
+        public final Calculable[] calculable;
 
-        public SignalCalculable(Calculable calculable) {
+        public SignalCalculable(Calculable[] calculable) {
             this.calculable = calculable;
         }
     }

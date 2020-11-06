@@ -3,6 +3,7 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorUnitExternMaster;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.SocketAdapter;
 import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
+import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
@@ -88,7 +89,8 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     public boolean accept(Calculable cal, int[] clusterData) {
         synchronized (lock) {
             if(!hasDone[cal.getCalculatorId()]) {
-                area.getClusters().get(cal.getCalculatorId()).setValue(clusterData);
+                Cluster c = area.getClusters().get(cal.getCalculatorId());
+                c.setValue(clusterData);
                 acceptInternal(cal.getCalculatorId());
                 return true;
             } else {

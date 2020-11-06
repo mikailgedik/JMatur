@@ -1,5 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.calculator.remote;
 
+import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
 
 import java.io.IOException;
@@ -28,10 +29,11 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
                 while(shouldRun) {
                     o = socket.readSignal();
                     if(o instanceof Signal.SignalGet) {
-                        sendNext();
+                        sendNext(((Signal.SignalGet) o).amount);
                     } else if (o instanceof Signal.SignalResult) {
-                        configuration.getCalculatorMandelbrot().accept(((Signal.SignalResult) o).result,
+                        boolean accepted = configuration.getCalculatorMandelbrot().accept(((Signal.SignalResult) o).result,
                                 ((Signal.SignalResult) o).result.getData());
+                        System.out.println("Received result " + accepted);
                     } else if (o instanceof Signal.SignalDone) {
                         shouldRun = false;
                     } else {
@@ -45,8 +47,12 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
         thread.start();
     }
 
-    private void sendNext() throws IOException {
-        socket.sendCalculable(configuration.getCalculatorMandelbrot().get());
+    private void sendNext(int amount) throws IOException {
+        Calculable[] calculables = new Calculable[amount];
+        for(int i = 0; i < calculables.length; i++) {
+            calculables[i] = configuration.getCalculatorMandelbrot().get();
+        }
+        socket.sendCalculable(calculables);
     }
 
     @Override

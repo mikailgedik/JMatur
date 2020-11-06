@@ -41,10 +41,11 @@ public class Connector {
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
 
         calculatorMandelbrot = new CalculatorMandelbrotArea();
-        //imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
 
-        CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
-        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
+        imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
+
+        //CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
+        //imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
     }
 
     public Object getSetting(String name) {
