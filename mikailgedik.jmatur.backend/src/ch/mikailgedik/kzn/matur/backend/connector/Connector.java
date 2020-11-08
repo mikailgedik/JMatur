@@ -106,8 +106,8 @@ public class Connector {
         }
 
         image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
-
-        FileManager.getFileManager().saveImage("/home/mikail/Desktop/out/file" + (counter++) +".png", image);
+        //TODO
+        //FileManager.getFileManager().saveImage("/home/mikail/Desktop/out/file" + (counter++) +".png", image);
     }
 
     static int counter = 0;

@@ -71,6 +71,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
                 for(CalculatorUnit unit: units) {
                     //TODO
                     unit.awaitTerminationAndCleanup(100000);
+                    System.out.println("Done");
                 }
                 socket.sendDone();
                 calculables.clear();
@@ -108,7 +109,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
     }
 
     @Override
-    public Calculable get() {
+    public synchronized Calculable get() {
         synchronized (calculables) {
             if(calculables.size() < BUFFER_LOWER_THRESHOLD) {
                 try {
@@ -125,6 +126,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
                     e.printStackTrace();
                 }
             }
+
             return calculables.removeFirst();
         }
     }
@@ -133,7 +135,5 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
         for(long device: OpenCLHelper.getAllAvailableDevices()) {
             units.add(new CalculatorUnitGPU(device));
         }
-
-        //units.add(new CalculatorUnitCPU());
     }
 }
