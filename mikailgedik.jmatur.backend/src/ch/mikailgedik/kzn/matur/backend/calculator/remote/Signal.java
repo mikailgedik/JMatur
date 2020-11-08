@@ -1,7 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.calculator.remote;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 
 import java.io.Serializable;
 
@@ -30,6 +30,18 @@ public interface Signal extends Serializable{
     }
 
     //Signals sent by master
+    class SignalInit implements Signal {
+        private final CalculatorUnit.Init init;
+
+        public SignalInit(CalculatorUnit.Init init) {
+            this.init = init;
+        }
+
+        public CalculatorUnit.Init getInit() {
+            return init;
+        }
+    }
+
     class SignalAbort implements Signal {
         public final int calcId;
 

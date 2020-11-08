@@ -1,4 +1,4 @@
-__kernel void mandelbrot(__global const double *coordi, __global int *res,
+__kernel void fractal(__global const double *coordi, __global int *res,
                 __global int* it, __global int* cD, __global double* precision, __global int* abort) {
 
     int gid = get_global_id(0);

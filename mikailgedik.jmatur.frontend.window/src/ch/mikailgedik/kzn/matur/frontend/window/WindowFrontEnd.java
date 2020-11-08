@@ -1,9 +1,8 @@
 package ch.mikailgedik.kzn.matur.frontend.window;
 
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.connector.Connector;
-import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
-import ch.mikailgedik.kzn.matur.backend.connector.SlaveConnector;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,15 +10,24 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class WindowFrontEnd extends JFrame {
     private FractalCanvas canvas;
     private Point mousePoint;
 
+    private JPanel slaveContainer;
+    private JButton exit;
+
+    private JPanel masterContainer;
     private JTextArea textPanel;
     private JScrollPane scrollPane;
     private JSplitPane splitPane;
-    private JButton refreshButton;
+    private JMenuBar menuBar;
+
+    private JPanel loginContainer;
+    private JCheckBox isSlave;
+    private JButton start, openSettings, editKernelCalc, editKernelRender;
 
     private final Connector connector;
 
@@ -27,27 +35,6 @@ public class WindowFrontEnd extends JFrame {
         super("WindowFrontEnd");
         connector = new Connector();
         init();
-
-        splitPane.setDividerLocation(0.8);
-
-
-
-        refresh();
-
-        //TODO test zoom
-        /*
-        new Thread(() -> {
-            while(true) {
-                try {
-                    Thread.sleep(10);
-                    zoomIntoByFactor(-.01);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }).start();
-        */
-
     }
 
     private void zoomIntoByFactor(double factor) {
@@ -72,59 +59,106 @@ public class WindowFrontEnd extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(new Dimension(400,300));
         setLocationRelativeTo(null);
+
         setVisible(true);
     }
 
     private void createComponents() {
-        canvas = new FractalCanvas();
+        {
+            loginContainer = new JPanel();
+            start = new JButton("Start");
+            openSettings = new JButton("Open calculation settings");
+            editKernelCalc = new JButton("Edit calculation kernel");
+            editKernelRender = new JButton("Edit render kernel");
 
-        textPanel = new JTextArea();
-        textPanel.setText("OUTPUT\n");
-        textPanel.setForeground(Color.WHITE);
-        textPanel.setBackground(Color.BLACK);
-        textPanel.setEditable(false);
-        scrollPane = new JScrollPane(textPanel);
+            isSlave = new JCheckBox("Use as slave");
 
-        splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitPane.add(canvas);
-        splitPane.add(scrollPane);
+            start.addActionListener((event) -> {
+                showUnitsDialog();
+                boolean changed = false;
 
-        this.refreshButton = new JButton("Refresh");
-        this.refreshButton.addActionListener(e -> this.refresh());
+                if(isSlave.isSelected()) {
+                    try {
+                        connector.initSlave();
+                        setContentPane(slaveContainer);
+                        changed = true;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Failed to connect!");
+                    }
+                } else {
+                    connector.initMaster(-1);
+                    splitPane.add(scrollPane);
+                    setJMenuBar(menuBar);
+                    setContentPane(masterContainer);
+                    changed = true;
+                }
+                if(changed) {
+                    this.validate();
+                    splitPane.setDividerLocation(0.8);
+                    if(!connector.isSlave()) {
+                        refresh();
+                    }
+                }
+            });
 
-        MouseAdapter adapter = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                mousePoint = e.getPoint();
-            }
+            editKernelRender.addActionListener((event) -> connector.setClKernelRender(showStringEditDialog(connector.getClKernelRender())));
+            editKernelCalc.addActionListener((event) -> connector.setClKernelCalculate(showStringEditDialog(connector.getClKernelCalculate())));
+            openSettings.addActionListener(this::openSettings);
+        }
+        {
+            masterContainer = new JPanel();
+            canvas = new FractalCanvas();
 
-            @Override
-            public void mouseDragged(MouseEvent e) {
-                if(mousePoint != null) {
-                    moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
+            textPanel = new JTextArea();
+            textPanel.setText("OUTPUT\n");
+            textPanel.setForeground(Color.WHITE);
+            textPanel.setBackground(Color.BLACK);
+            textPanel.setEditable(false);
+            scrollPane = new JScrollPane(textPanel);
+
+            splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+            splitPane.add(canvas);
+            splitPane.add(scrollPane);
+
+            MouseAdapter adapter = new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
                     mousePoint = e.getPoint();
                 }
-            }
 
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent e) {
-                zoomIntoByFactor(e.getPreciseWheelRotation());
-            }
-        };
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    if(mousePoint != null) {
+                        moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
+                        mousePoint = e.getPoint();
+                    }
+                }
 
-        canvas.addMouseListener(adapter);
-        canvas.addMouseMotionListener(adapter);
-        canvas.addMouseWheelListener(adapter);
+                @Override
+                public void mouseWheelMoved(MouseWheelEvent e) {
+                    zoomIntoByFactor(e.getPreciseWheelRotation());
+                }
+            };
 
-        canvas.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                connector.setImagePixelSize(canvas.getWidth(), canvas.getHeight());
-                System.out.println("Canvas resize: " + canvas.getWidth() + " " + canvas.getHeight());
-                connector.createImage();
-                canvas.setScreen(connector.getImage());
-            }
-        });
+            canvas.addMouseListener(adapter);
+            canvas.addMouseMotionListener(adapter);
+            canvas.addMouseWheelListener(adapter);
+
+            canvas.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    connector.setImagePixelSize(canvas.getWidth(), canvas.getHeight());
+                    System.out.println("Canvas resize: " + canvas.getWidth() + " " + canvas.getHeight());
+                    connector.createImage();
+                    canvas.setScreen(connector.getImage());
+                }
+            });
+        }
+        {
+            slaveContainer = new JPanel();
+            exit = new JButton("Exit");
+        }
 
         createMenu();
     }
@@ -137,7 +171,7 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void createMenu() {
-        JMenuBar menuBar = new JMenuBar();
+        menuBar = new JMenuBar();
         {
             //File
             JMenu menuFile = new JMenu("File");
@@ -158,7 +192,6 @@ public class WindowFrontEnd extends JFrame {
         {
             //Fractal
             JMenu menuFractal = new JMenu("Fractal");
-
 
             JMenuItem selectFrac = new JMenuItem("Select Fractal");
             selectFrac.addActionListener(this::selectFractal);
@@ -181,8 +214,66 @@ public class WindowFrontEnd extends JFrame {
 
             menuBar.add(menuSetting);
         }
+    }
 
-        setJMenuBar(menuBar);
+    private String showStringEditDialog(String start) {
+        JDialog dialog = new JDialog(this, true);
+        JPanel panel = new JPanel();
+        JTextArea textArea = new JTextArea();
+        textArea.append(start);
+        JButton closeWithSave = new JButton("Exit and save");
+        AtomicReference<String> s = new AtomicReference<>(start);
+        closeWithSave.addActionListener(e -> {
+            s.set(textArea.getText());
+            dialog.dispose();
+        });
+        JScrollPane scrollPane = new JScrollPane(textArea);
+
+        BorderLayout layout = new BorderLayout();
+        layout.addLayoutComponent(scrollPane, BorderLayout.CENTER);
+        layout.addLayoutComponent(closeWithSave, BorderLayout.SOUTH);
+        panel.add(scrollPane);
+        panel.add(closeWithSave);
+        panel.setLayout(layout);
+
+        dialog.add(panel);
+        dialog.setSize(new Dimension(400, 600));
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+
+        return s.get();
+    }
+
+    private void showUnitsDialog() {
+        DefaultListModel<CalculatorUnit> listModel = new DefaultListModel<>();
+
+        JList<CalculatorUnit> list = new JList<>(listModel);
+
+        JDialog dialog = new JDialog(this, true);
+        JPanel panel = new JPanel();
+        JButton closeWithSave = new JButton("Exit and save");
+        closeWithSave.addActionListener(e -> {
+            ArrayList<CalculatorUnit> units = new ArrayList<>();
+            for(int i: list.getSelectedIndices()) {
+                units.add(listModel.get(i));
+            }
+            connector.setCalculatorUnits(units);
+            dialog.dispose();
+        });
+        JScrollPane scrollPane = new JScrollPane(list);
+
+        BorderLayout layout = new BorderLayout();
+        layout.addLayoutComponent(scrollPane, BorderLayout.CENTER);
+        layout.addLayoutComponent(closeWithSave, BorderLayout.SOUTH);
+        panel.add(scrollPane);
+        panel.add(closeWithSave);
+        panel.setLayout(layout);
+
+        dialog.add(panel);
+        dialog.setSize(new Dimension(400, 600));
+        dialog.setLocationRelativeTo(this);
+        connector.sendAvailableUnitsTo(listModel::addElement);
+        dialog.setVisible(true);
     }
 
     private void openSettings(ActionEvent actionEvent) {
@@ -243,7 +334,7 @@ public class WindowFrontEnd extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(panel);
         dialog.add(scrollPane);
-        dialog.setSize(new Dimension(400, 300));
+        dialog.setSize(new Dimension(400, 600));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
@@ -299,25 +390,40 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void createLayout() {
-        //https://docs.oracle.com/javase/tutorial/uiswing/layout/group.html
+        {
+            //https://docs.oracle.com/javase/tutorial/uiswing/layout/group.html
+            BorderLayout layout = new BorderLayout();
 
-        BorderLayout layout = new BorderLayout();
+            layout.addLayoutComponent(splitPane, BorderLayout.CENTER);
+            masterContainer.add(splitPane);
+            masterContainer.setLayout(layout);
+        }
 
-        layout.addLayoutComponent(splitPane, BorderLayout.CENTER);
-        layout.addLayoutComponent(refreshButton, BorderLayout.SOUTH);
-        this.getContentPane().add(splitPane);
-        this.getContentPane().add(refreshButton);
-        this.setLayout(layout);
+        {
+            GridLayout layout = new GridLayout(10,1);
+
+            loginContainer.add(openSettings);
+            loginContainer.add(editKernelCalc);
+            loginContainer.add(editKernelRender);
+            loginContainer.add(isSlave);
+            loginContainer.add(start);
+            loginContainer.setLayout(layout);
+            this.setContentPane(loginContainer);
+        }
+        {
+            BorderLayout layout = new BorderLayout();
+
+            layout.addLayoutComponent(scrollPane, BorderLayout.CENTER);
+            slaveContainer.add(scrollPane);
+            slaveContainer.setLayout(layout);
+        }
     }
 
-    public static void main(String[] args) throws InvocationTargetException, InterruptedException, IOException {
+    public static void main(String[] args) throws InvocationTargetException, InterruptedException {
         if(args.length == 0) {
             SwingUtilities.invokeAndWait(WindowFrontEnd::new);
         } else {
-            for(String s: args) {
-                System.out.println(s);
-            }
-            new SlaveConnector("127.0.0.1", 5000);
+            assert false;
         }
     }
 }

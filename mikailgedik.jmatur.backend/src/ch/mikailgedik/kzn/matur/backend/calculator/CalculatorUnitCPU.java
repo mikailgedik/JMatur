@@ -1,18 +1,27 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
+
+@Deprecated
 public class CalculatorUnitCPU implements CalculatorUnit {
     private int logicClusterWidth, logicClusterHeight, maxIterations;
     private double precision;
     private WorkThread[] threads;
-    private int thrd;
+    private int thread;
 
     private CalculatorMandelbrot calculatorMandelbrot;
     public CalculatorUnitCPU() {
+        assert false: "Class out of use";
         setThreads(0);
     }
 
+    @Override
+    public void init(Init init) {
+        //Do nothing
+    }
+
     public void setThreads(int threads) {
-        this.thrd = threads;
+        this.thread = threads;
     }
 
     @Override
@@ -23,7 +32,7 @@ public class CalculatorUnitCPU implements CalculatorUnit {
         this.precision = configuration.getPrecision();
         this.calculatorMandelbrot = configuration.getCalculatorMandelbrot();
 
-        this.threads = new WorkThread[thrd];
+        this.threads = new WorkThread[thread];
 
         for(int i = 0; i < threads.length; i++) {
             threads[i] = new WorkThread();

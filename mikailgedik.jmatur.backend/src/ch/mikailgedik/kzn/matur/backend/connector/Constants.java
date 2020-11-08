@@ -5,6 +5,10 @@ public interface Constants {
 
     String FILE_DEFAULT_OUTPUT = "string.file.defaultOutputFile";
 
+    String CONNECTION_ACCEPTS_EXTERNAL = "int.connection.acceptsExternal";
+    String CONNECTION_HOST = "string.connection.host";
+    String CONNECTION_PORT = "int.connection.port";
+
     String RENDER_MINX = "double.setting.render.minX";
     String RENDER_MAXX = "double.setting.render.maxX";
     String RENDER_MINY = "double.setting.render.minY";

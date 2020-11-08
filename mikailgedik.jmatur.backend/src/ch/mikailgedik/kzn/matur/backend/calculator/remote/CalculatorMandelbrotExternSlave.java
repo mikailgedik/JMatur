@@ -1,6 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.calculator.remote;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.*;
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
@@ -24,18 +25,19 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
 
     private AtomicInteger pendingRequests;
 
-    public CalculatorMandelbrotExternSlave(String host, int port) throws IOException {
+    public CalculatorMandelbrotExternSlave(String host, int port, ArrayList<CalculatorUnit> units) throws IOException {
         socket = new SocketAdapter(new Socket(host, port));
-        units = new ArrayList<>();
+        this.units = units;
         calculables = new LinkedList<>();
         pendingRequests = new AtomicInteger();
-        setDefaultUnits();
 
         socketReader = new Thread(() -> {
             try {
                 while(true) {
                     Signal signal = socket.readSignal();
-                    if(signal instanceof Signal.SignalConfigure) {
+                    if(signal instanceof Signal.SignalInit) {
+                        units.forEach(u -> u.init(((Signal.SignalInit) signal).getInit()));
+                    } else if(signal instanceof Signal.SignalConfigure) {
                         sigConf((Signal.SignalConfigure) signal);
                     } else if (signal instanceof Signal.SignalAbort) {
                         sigAbort((Signal.SignalAbort) signal);
@@ -128,12 +130,6 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
             }
 
             return calculables.removeFirst();
-        }
-    }
-
-    private void setDefaultUnits() {
-        for(long device: OpenCLHelper.getAllAvailableDevices()) {
-            units.add(new CalculatorUnitGPU(device));
         }
     }
 }

@@ -1,5 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
@@ -15,7 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 //TODO use OpenCLHelper
 //TODO decide when memory has to be released. The result is stored in VRAM addressable by Cluster.getGPUAddress()
 public class CalculatorUnitGPU implements CalculatorUnit {
-    private static final String KERNEL_NAME="mandelbrot", KERNEL = "/clkernels/" + KERNEL_NAME + ".cl";
+    private static final String KERNEL_NAME="fractal";
+    private String kernelSource;
     private final CLDevice device;
     private long program, kernel;
     /** Prefix p stands for pointer, these are addresses for memory on the GPU*/
@@ -42,7 +44,10 @@ public class CalculatorUnitGPU implements CalculatorUnit {
                 OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_MAX_COMPUTE_UNITS));
         System.out.println("\tClock             : " +
                 OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_MAX_CLOCK_FREQUENCY));
+    }
 
+    public void init(Init init) {
+        this.kernelSource = init.getClKernelSource();
         createContext();
         createCommandQueue();
         createProgram();
@@ -69,9 +74,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     private void createProgram() {
         IntBuffer error = BufferUtils.createIntBuffer(1);
 
-        String kernel = FileManager.getFileManager().readFile(KERNEL);
-
-        program = CL22.clCreateProgramWithSource(device.getContext(), kernel, error);
+        program = CL22.clCreateProgramWithSource(device.getContext(), kernelSource, error);
         //https://www.codeproject.com/articles/86551/part-1-programming-your-graphics-card-gpu-with-jav
         OpenCLHelper.check(error);
     }

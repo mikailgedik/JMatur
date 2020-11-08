@@ -1,10 +1,18 @@
 ###CONSTANT VALUES
 #These value are not meant to change during computation (e. g. things like software version)
 string.value.version=Java 0.0.3
-#------------------------------------------------
+#------------------------------------------------------------------
 ###FILE SETTINGS
 #default file when exporting image
 string.file.defaultOutputFile=
+#------------------------------------------------------------------
+###CONNECTION SETTINGS
+#0 if no external calculators are allowed, 1 otherwise
+int.connection.acceptsExternal=1
+#Host to connect to as slave
+string.connection.host=127.0.0.1
+#Port to use
+int.connection.port=5000
 #------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range

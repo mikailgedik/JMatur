@@ -1,11 +1,16 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrotArea;
+import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitCPU;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitGPU;
+import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorMandelbrotExternSlave;
+import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorUnitExternMaster;
+import ch.mikailgedik.kzn.matur.backend.calculator.remote.SocketAdapter;
 import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.Region;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
+import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import ch.mikailgedik.kzn.matur.backend.render.ColorFunction;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreator;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
@@ -14,7 +19,12 @@ import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** This class connects the frontend with the backend */
 public class Connector {
@@ -22,12 +32,32 @@ public class Connector {
     private Screen image;
     private DataSet dataSet;
     private CalculatorMandelbrotArea calculatorMandelbrot;
+    private CalculatorMandelbrotExternSlave calculatorMandelbrotExternSlave;
     private ImageCreator imageCreator;
+    private boolean isSlave;
+    private Thread thread;
+    private ArrayList<CalculatorUnit> units;
+
+    private String clKernelCalculate, clKernelRender;
 
     public Connector() {
         image = null;
-
         settingsManager = SettingsManager.createDefaultSettingsManager();
+
+        units = new ArrayList<>();
+
+        clKernelCalculate = FileManager.getFileManager().readFile("/clkernels/mandelbrot.cl");
+        clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
+    }
+
+    public void initSlave() throws IOException {
+        isSlave = true;
+        calculatorMandelbrotExternSlave = new CalculatorMandelbrotExternSlave(
+                settingsManager.getS(Constants.CONNECTION_HOST), settingsManager.getI(Constants.CONNECTION_PORT), units);
+    }
+
+    public void initMaster(int renderDevice) {
+        isSlave = false;
         dataSet = DataSet.createDataSet(
                 settingsManager.getI(Constants.DATA_LOGIC_CLUSTER_WIDTH),
                 settingsManager.getI(Constants.DATA_LOGIC_CLUSTER_HEIGHT),
@@ -40,12 +70,47 @@ public class Connector {
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
 
-        calculatorMandelbrot = new CalculatorMandelbrotArea();
+        calculatorMandelbrot = new CalculatorMandelbrotArea(units, new CalculatorUnit.Init(clKernelCalculate));
+        CalculatorUnitGPU unit = null;
+        if(renderDevice == -1) {
+            for (CalculatorUnit u: units) {
+                if(u instanceof CalculatorUnitGPU) {
+                    unit = (CalculatorUnitGPU) u;
+                    break;
+                }
+            }
+        } else {
+            unit = (CalculatorUnitGPU) units.get(renderDevice);
+        }
+        assert unit != null: "No local GPU available";
+        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(), this.clKernelRender);
+    }
 
-        imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.mandelbrotFromString(settingsManager.getS(Constants.RENDER_COLOR_FUNCTION)));
+    public void sendAvailableUnitsTo(Consumer<CalculatorUnit> receiver) {
+        for(long device: OpenCLHelper.getAllAvailableDevices()) {
+            receiver.accept(new CalculatorUnitGPU(device));
+        }
+        if(getSettingI(Constants.CONNECTION_ACCEPTS_EXTERNAL) == 1) {
+            thread = new Thread(() -> {
+                try {
+                    ServerSocket serverSocket = new ServerSocket(settingsManager.getI(Constants.CONNECTION_PORT));
+                    while(true) {
+                        receiver.accept(new CalculatorUnitExternMaster(new SocketAdapter(serverSocket.accept())));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            thread.setName("Socket acceptor");
+            thread.start();
+        }
+    }
 
-        //CalculatorUnitGPU unit = (CalculatorUnitGPU) calculatorMandelbrot.getUnits().get(0);
-        //imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(),   "/clkernels/colorFunctionLog.cl", "colorFunctionLog");
+    public void setCalculatorUnits(ArrayList<CalculatorUnit> units) {
+        if(thread != null) {
+            thread.interrupt();
+        }
+        this.units = units;
     }
 
     public Object getSetting(String name) {
@@ -116,6 +181,10 @@ public class Connector {
         return image;
     }
 
+    public boolean isSlave() {
+        return isSlave;
+    }
+
     public void saveImage(String path) {
         assert image != null;
         assert path != null;
@@ -167,4 +236,19 @@ public class Connector {
         settingsManager.addSetting(Constants.RENDER_IMAGE_HEIGHT, h);
     }
 
+    public String getClKernelCalculate() {
+        return clKernelCalculate;
+    }
+
+    public void setClKernelCalculate(String clKernelCalculate) {
+        this.clKernelCalculate = clKernelCalculate;
+    }
+
+    public String getClKernelRender() {
+        return clKernelRender;
+    }
+
+    public void setClKernelRender(String clKernelRender) {
+        this.clKernelRender = clKernelRender;
+    }
 }

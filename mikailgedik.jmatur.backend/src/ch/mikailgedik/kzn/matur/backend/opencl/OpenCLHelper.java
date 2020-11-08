@@ -10,15 +10,17 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 
 public class OpenCLHelper {
-    public static long createProgramFromFile(long context, String kernelFile) {
+    public static long createProgramFromString(long context, String kernelSource) {
         IntBuffer error = BufferUtils.createIntBuffer(1);
 
-        String kernel = FileManager.getFileManager().readFile(kernelFile);
-
-        long program = CL22.clCreateProgramWithSource(context, kernel, error);
+        long program = CL22.clCreateProgramWithSource(context, kernelSource, error);
         //https://www.codeproject.com/articles/86551/part-1-programming-your-graphics-card-gpu-with-jav
         OpenCLHelper.check(error);
         return program;
+    }
+
+    public static long createProgramFromFile(long context, String kernelFile) {
+        return createProgramFromString(context, FileManager.getFileManager().readFile(kernelFile));
     }
 
     public static void buildProgram(long device, long program) {

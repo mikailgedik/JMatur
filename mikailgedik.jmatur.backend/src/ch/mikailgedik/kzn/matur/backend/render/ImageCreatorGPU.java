@@ -10,20 +10,22 @@ import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import java.util.ArrayList;
 
 public class ImageCreatorGPU extends ImageCreator{
+    private static final String KERNEL_NAME = "color";
     private final DataSet dataSet;
     private ImageResultGPU imageResult;
     private final ArrayList<ImageResultGPU> buffer;
     private CLDevice device;
     private final long program, kernel;
 
-    public ImageCreatorGPU(DataSet dataSet, CLDevice device, String colorFunctionFile, String kernelName) {
+    public ImageCreatorGPU(DataSet dataSet, CLDevice device, String colorFunctionSource) {
         this.dataSet = dataSet;
         buffer = new ArrayList<>();
 
         this.device = device;
-        this.program = OpenCLHelper.createProgramFromFile(device.getContext(), colorFunctionFile);
+        this.program = OpenCLHelper.createProgramFromString(device.getContext(),
+                colorFunctionSource);
         OpenCLHelper.buildProgram(device.getDevice(), program);
-        this.kernel = OpenCLHelper.createKernel(program, kernelName);
+        this.kernel = OpenCLHelper.createKernel(program, KERNEL_NAME);
     }
 
     /** Does not scale the images down to minPixelWidth and minPixelHeight, but guarantees that the returned Screen has always bigger dimensions*/

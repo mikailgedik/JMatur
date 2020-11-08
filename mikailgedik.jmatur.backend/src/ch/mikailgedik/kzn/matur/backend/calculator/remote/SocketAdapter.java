@@ -1,12 +1,11 @@
 package ch.mikailgedik.kzn.matur.backend.calculator.remote;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.LinkedList;
-import java.util.Stack;
 
 public class SocketAdapter {
     private static final int RESULT = 0x0;
@@ -15,6 +14,7 @@ public class SocketAdapter {
     private static final int ABORT = 0x4;
     private static final int CALCULABLE = 0x8;
     private static final int CONFIGURE = 0x10;
+    private static final int INIT = 0x20;
 
     private final Socket socket;
     private final DataInputStream in;
@@ -55,6 +55,10 @@ public class SocketAdapter {
                     } else if(s instanceof Signal.SignalResult) {
                         sendResultInter(((Signal.SignalResult) s).result,
                                 ((Signal.SignalResult) s).result.getData());
+                    } else if(s instanceof Signal.SignalInit) {
+                        sendInitInter((Signal.SignalInit)s);
+                    } else {
+                        throw new RuntimeException("Unknown signal: "+ s);
                     }
                 }
             } catch (InterruptedException | IOException e) {
@@ -66,7 +70,15 @@ public class SocketAdapter {
 
     }
 
-    public void sendSignalAbortInter(int calcId) throws IOException {
+    private void sendInitInter(Signal.SignalInit init) throws IOException {
+        synchronized (out) {
+            out.writeInt(INIT);
+            out.writeUTF(init.getInit().getClKernelSource());
+            out.flush();
+        }
+    }
+
+    private void sendSignalAbortInter(int calcId) throws IOException {
         synchronized (out) {
             out.writeInt(ABORT);
             out.writeInt(calcId);
@@ -75,7 +87,7 @@ public class SocketAdapter {
         }
     }
 
-    public void sendConfigurationInter(CalculatorUnit.CalculatorConfiguration configuration) throws IOException {
+    private void sendConfigurationInter(CalculatorUnit.CalculatorConfiguration configuration) throws IOException {
         synchronized (out) {
             out.writeInt(CONFIGURE);
             out.writeInt(configuration.getLogicClusterWidth());
@@ -89,7 +101,7 @@ public class SocketAdapter {
         }
     }
 
-    public void sendCalculableInter(Calculable[] calculable) throws IOException {
+    private void sendCalculableInter(Calculable[] calculable) throws IOException {
         synchronized (out) {
             out.writeInt(CALCULABLE);
             out.writeInt(calculable.length);
@@ -107,7 +119,7 @@ public class SocketAdapter {
         }
     }
 
-    public void sendResultInter(Calculable calculable, int[] data) throws IOException {
+    private void sendResultInter(Calculable calculable, int[] data) throws IOException {
         synchronized (out) {
             out.writeInt(RESULT);
             out.writeInt(calculable.getCalculatorId());
@@ -123,7 +135,7 @@ public class SocketAdapter {
         }
     }
 
-    public void sendDoneInter() throws IOException {
+    private void sendDoneInter() throws IOException {
         synchronized (out) {
             out.writeInt(DONE);
             out.flush();
@@ -132,12 +144,19 @@ public class SocketAdapter {
 
     }
 
-    public void requestNextInter(int amount) throws IOException {
+    private void requestNextInter(int amount) throws IOException {
         synchronized (out) {
             out.writeInt(GET);
             out.writeInt(amount);
             out.flush();
             //System.out.println("Sent next");
+        }
+    }
+
+    public void sendSignalInit(CalculatorUnit.Init init) {
+        synchronized (signals) {
+            signals.add(new Signal.SignalInit(init));
+            signals.notify();
         }
     }
 
@@ -199,9 +218,15 @@ public class SocketAdapter {
                 case ABORT -> getAbort();
                 case CALCULABLE -> getCalculable();
                 case CONFIGURE -> getConfigure();
+                case INIT -> getInit();
                 default -> throw new IllegalStateException("Unknown type: " + type);
             };
         }
+    }
+
+    private Signal.SignalInit getInit() throws IOException {
+        String kern = in.readUTF();
+        return new Signal.SignalInit(new CalculatorUnit.Init(kern));
     }
 
     private Signal.SignalGet getGet() throws IOException {

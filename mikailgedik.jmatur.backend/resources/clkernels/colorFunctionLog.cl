@@ -1,4 +1,4 @@
-__kernel void colorFunctionLog(__global int* cluster,
+__kernel void color(__global int* cluster,
                 __global int* image, __global int* destinationOffset,
                 __global int* logicClusterWidth, __global int* logicImageWidth, __global int* maxIterations) {
 

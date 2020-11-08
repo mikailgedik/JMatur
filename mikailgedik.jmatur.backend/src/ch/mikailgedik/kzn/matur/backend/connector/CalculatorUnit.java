@@ -1,11 +1,26 @@
-package ch.mikailgedik.kzn.matur.backend.calculator;
+package ch.mikailgedik.kzn.matur.backend.connector;
+
+import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrot;
 
 import java.io.Serializable;
 
 public interface CalculatorUnit {
+    void init(Init init);
     void configureAndStart(CalculatorConfiguration configuration);
     void awaitTerminationAndCleanup(long maxWaitingTime) throws InterruptedException;
     void abort(int calcId);
+
+    class Init {
+        private final String clKernelSource;
+
+        public Init(String clKernelSource) {
+            this.clKernelSource = clKernelSource;
+        }
+
+        public String getClKernelSource() {
+            return clKernelSource;
+        }
+    }
 
     class CalculatorConfiguration implements Serializable {
         private final int logicClusterWidth, logicClusterHeight, maxIterations;

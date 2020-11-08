@@ -1,7 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.calculator.remote;
 
 import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnit;
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 
 import java.io.IOException;
 
@@ -12,6 +12,11 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
 
     public CalculatorUnitExternMaster(SocketAdapter socket) {
         this.socket = socket;
+    }
+
+    @Override
+    public void init(Init init) {
+        socket.sendSignalInit(init);
     }
 
     @Override

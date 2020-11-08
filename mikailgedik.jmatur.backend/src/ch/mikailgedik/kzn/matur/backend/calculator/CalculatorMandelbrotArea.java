@@ -1,7 +1,6 @@
 package ch.mikailgedik.kzn.matur.backend.calculator;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorUnitExternMaster;
-import ch.mikailgedik.kzn.matur.backend.calculator.remote.SocketAdapter;
+import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
@@ -9,9 +8,6 @@ import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.SocketImpl;
 import java.util.ArrayList;
 
 public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
@@ -24,41 +20,10 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     private int index;
     private final Object lock = new Object();
 
-    public CalculatorMandelbrotArea() {
+    public CalculatorMandelbrotArea(ArrayList<CalculatorUnit> units, CalculatorUnit.Init init) {
         cleanUp();
-        units = new ArrayList<>();
-        setDefaultUnits();
-    }
-
-    private void setDefaultUnits() {
-        /*
-        for(long device: OpenCLHelper.getAllAvailableDevices()) {
-            units.add(new CalculatorUnitGPU(device));
-        }
-
-        units.add(new CalculatorUnitCPU());
-        */
-
-        ServerSocket server = null;
-        try {
-            server = new ServerSocket(5000);
-
-            server.setSoTimeout(5000);
-            units.add(new CalculatorUnitExternMaster(new SocketAdapter(server.accept())));
-        } catch (IOException e) {
-            if(server != null && !server.isClosed()) {
-                try {
-                    server.close();
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-            }
-            e.printStackTrace();
-        }
-        if(server != null) {
-            System.out.println("New unit");
-        }
-
+        this.units = units;
+        units.forEach(u -> u.init(init));
     }
 
     public void calculate(CalculableArea area, DataSet dataSet, int threads, long maxWaitingTime) {
