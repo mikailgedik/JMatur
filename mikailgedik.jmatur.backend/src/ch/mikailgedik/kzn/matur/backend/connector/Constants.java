@@ -5,18 +5,12 @@ public interface Constants {
 
     String FILE_DEFAULT_OUTPUT = "string.file.defaultOutputFile";
 
-    String CONNECTION_ACCEPTS_EXTERNAL = "int.connection.acceptsExternal";
-    String CONNECTION_HOST = "string.connection.host";
-    String CONNECTION_PORT = "int.connection.port";
+    String CONNECTION_ACCEPTS_EXTERNAL = "int.setting.connection.acceptsExternal";
+    String CONNECTION_HOST = "string.setting.connection.host";
+    String CONNECTION_PORT = "int.setting.connection.port";
 
-    String RENDER_MINX = "double.setting.render.minX";
-    String RENDER_MAXX = "double.setting.render.maxX";
-    String RENDER_MINY = "double.setting.render.minY";
-    String RENDER_MAXY = "double.setting.render.maxY";
-    String RENDER_IMAGE_WIDTH = "int.setting.render.imageWidth";
-    String RENDER_IMAGE_HEIGHT = "int.setting.render.imageHeight";
+    String RENDER_ASPECT_RATIO = "double.setting.render.aspectRatio";
     String RENDER_ZOOM_FACTOR = "double.setting.render.zoomFactor";
-    String RENDER_COLOR_FUNCTION = "string.setting.render.colorFunction";
 
     String CALCULATION_START_ITERATION = "int.setting.calculation.startIterations";
     String CALCULATION_ITERATION_MODEL = "string.setting.calculation.iterationModel";

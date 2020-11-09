@@ -8,24 +8,17 @@ string.file.defaultOutputFile=
 #------------------------------------------------------------------
 ###CONNECTION SETTINGS
 #0 if no external calculators are allowed, 1 otherwise
-int.connection.acceptsExternal=1
+int.setting.connection.acceptsExternal=0
 #Host to connect to as slave
-string.connection.host=127.0.0.1
+string.setting.connection.host=127.0.0.1
 #Port to use
-int.connection.port=5000
+int.setting.connection.port=5000
 #------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range
-double.setting.render.minX=-2
-double.setting.render.maxX=2
-double.setting.render.minY=-2
-double.setting.render.maxY=2
-#Height and Width of image
-int.setting.render.imageWidth=100
-int.setting.render.imageHeight=100
+double.setting.render.aspectRatio=2.3
 #Default zoom factor
 double.setting.render.zoomFactor=0.1
-string.setting.render.colorFunction=mandelbrotHSB
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level

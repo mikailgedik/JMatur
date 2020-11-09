@@ -37,8 +37,13 @@ public class Connector {
     private boolean isSlave;
     private Thread thread;
     private ArrayList<CalculatorUnit> units;
-
     private String clKernelCalculate, clKernelRender;
+
+    private double aspectRatio;
+    private int pixelHeight;
+    private final double[] renderCenter;
+    private double renderHeight;
+
 
     public Connector() {
         image = null;
@@ -48,6 +53,8 @@ public class Connector {
 
         clKernelCalculate = FileManager.getFileManager().readFile("/clkernels/mandelbrot.cl");
         clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
+        renderCenter = new double[2];
+        renderHeight = 1;
     }
 
     public void initSlave() throws IOException {
@@ -69,6 +76,8 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
+
+        aspectRatio = settingsManager.getD(Constants.RENDER_ASPECT_RATIO);
 
         calculatorMandelbrot = new CalculatorMandelbrotArea(units, new CalculatorUnit.Init(clKernelCalculate));
         CalculatorUnitGPU unit = null;
@@ -106,7 +115,7 @@ public class Connector {
         }
     }
 
-    public void setCalculatorUnits(ArrayList<CalculatorUnit> units) {
+    public void useCalculatorUnits(ArrayList<CalculatorUnit> units) {
         if(thread != null) {
             thread.interrupt();
         }
@@ -155,11 +164,19 @@ public class Connector {
     }
 
     public synchronized void createImage() {
-        int w = settingsManager.getI(Constants.RENDER_IMAGE_WIDTH);
-        int h = settingsManager.getI(Constants.RENDER_IMAGE_HEIGHT);
+        int h = this.pixelHeight;
+        // The +.5 is for rounding
+        int w = (int) (this.pixelHeight * aspectRatio + .5);
+        double renderWidth = renderHeight * aspectRatio;
+
         int threads = settingsManager.getI(Constants.CALCULATION_MAX_THREADS);
         long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
-        double[] c = settingsManager.getRenderConstraints();
+        double[] c = {
+                renderCenter[0] - renderWidth/2,
+                renderCenter[0] + renderWidth/2,
+                renderCenter[1] - renderHeight/2,
+                renderCenter[1] + renderHeight/2
+        };
 
         Region region = new Region(c[0], c[2], c[1], c[3]);
 
@@ -171,11 +188,10 @@ public class Connector {
         }
 
         image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
+        image = image.getScaledScreen(w, h);
         //TODO
         //FileManager.getFileManager().saveImage("/home/mikail/Desktop/out/file" + (counter++) +".png", image);
     }
-
-    static int counter = 0;
 
     public Screen getImage() {
         return image;
@@ -196,44 +212,24 @@ public class Connector {
     }
 
     public void zoom(double ticks) {
-        double[] bounds = settingsManager.getRenderConstraints();
         double factor = Math.exp(settingsManager.getD(Constants.RENDER_ZOOM_FACTOR) * ticks);
-
-        double dx = (bounds[1] - bounds[0])/2;
-        double dy = (bounds[3] - bounds[2])/2;
-        double midX = bounds[0] + dx;
-        double midY = bounds[2] + dy;
-
-        dx *= factor;
-        dy *= factor;
-
-        bounds[0] = midX - dx;
-        bounds[1] = midX + dx;
-        bounds[2] = midY - dy;
-        bounds[3] = midY + dy;
-
-        settingsManager.setRenderConstraints(bounds);
+        renderHeight *= factor;
     }
 
     /** @param dx relative distance
      * @param dy relative distance**/
     public void moveRenderZone(double dx, double dy) {
-        double[] bounds = settingsManager.getRenderConstraints();
-
-        double w = (bounds[1] - bounds[0]);
-        double h = (bounds[3] - bounds[2]);
-
-        bounds[0] += w * dx;
-        bounds[1] += w * dx;
-        bounds[2] += h * dy;
-        bounds[3] += h * dy;
-
-        settingsManager.setRenderConstraints(bounds);
+        double renderWidth = renderHeight / aspectRatio;
+        renderCenter[0] += dx * renderWidth;
+        renderCenter[1] += dy * renderHeight;
     }
 
-    public void setImagePixelSize(int w, int h) {
-        settingsManager.addSetting(Constants.RENDER_IMAGE_WIDTH, w);
-        settingsManager.addSetting(Constants.RENDER_IMAGE_HEIGHT, h);
+    public void setImagePixelHeight(int h) {
+        this.pixelHeight = h;
+    }
+
+    public double getAspectRatio() {
+        return aspectRatio;
     }
 
     public String getClKernelCalculate() {

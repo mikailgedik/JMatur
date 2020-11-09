@@ -119,21 +119,4 @@ public class SettingsManager implements Constants {
     public TreeMap<String, Object> getAllSettings() {
         return settings;
     }
-
-    public double[] getRenderConstraints() {
-        return new double[] {
-                getD(Constants.RENDER_MINX),
-                getD(Constants.RENDER_MAXX),
-                getD(Constants.RENDER_MINY),
-                getD(Constants.RENDER_MAXY)
-        };
-    }
-
-    public void setRenderConstraints(double [] d) {
-        assert d.length == 4;
-        this.addSetting(Constants.RENDER_MINX, d[0]);
-        this.addSetting(Constants.RENDER_MAXX, d[1]);
-        this.addSetting(Constants.RENDER_MINY, d[2]);
-        this.addSetting(Constants.RENDER_MAXY, d[3]);
-    }
 }

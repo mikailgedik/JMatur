@@ -2,7 +2,6 @@ package ch.mikailgedik.kzn.matur.frontend.window;
 
 import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.connector.Connector;
-import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,6 +9,7 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class WindowFrontEnd extends JFrame {
@@ -31,25 +31,34 @@ public class WindowFrontEnd extends JFrame {
 
     private final Connector connector;
 
+    private ExecutorService executorService;
+    private Future<?> task;
+
     public WindowFrontEnd() {
         super("WindowFrontEnd");
         connector = new Connector();
+        executorService = Executors.newSingleThreadExecutor();
+        //Ensure task != null
+        task = executorService.submit(() -> {});
         init();
     }
 
     private void zoomIntoByFactor(double factor) {
-        connector.zoom(factor);
-        connector.createImage();
-        canvas.setScreen(connector.getImage());
+        if(task.isDone()) {
+            connector.zoom(factor);
+
+            refresh();
+        }
     }
 
     private void moveViewportByPixel(int pdx, int pdy) {
-        double dx = (1.0 * pdx / canvas.getWidth());
-        double dy = (1.0 * pdy / canvas.getHeight());
+        if(task.isDone()) {
+            double dx = (1.0 * pdx / canvas.getWidth());
+            double dy = (1.0 * pdy / canvas.getHeight());
+            connector.moveRenderZone(dx * connector.getAspectRatio(), -dy);
 
-        connector.moveRenderZone(dx, -dy);
-        connector.createImage();
-        canvas.setScreen(connector.getImage());
+            refresh();
+        }
     }
 
     private void init() {
@@ -90,6 +99,7 @@ public class WindowFrontEnd extends JFrame {
                     connector.initMaster(-1);
                     splitPane.add(scrollPane);
                     setJMenuBar(menuBar);
+                    canvas.setBusy(true);
                     setContentPane(masterContainer);
                     changed = true;
                 }
@@ -148,10 +158,10 @@ public class WindowFrontEnd extends JFrame {
             canvas.addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentResized(ComponentEvent e) {
-                    connector.setImagePixelSize(canvas.getWidth(), canvas.getHeight());
+                    connector.setImagePixelHeight(canvas.getHeight());
                     System.out.println("Canvas resize: " + canvas.getWidth() + " " + canvas.getHeight());
-                    connector.createImage();
-                    canvas.setScreen(connector.getImage());
+
+                    refresh();
                 }
             });
         }
@@ -164,10 +174,18 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void refresh() {
-        connector.createImage();
-        Screen image = connector.getImage();
-
-        canvas.setScreen(image);
+        if(!task.isDone()) {
+            return;//Discard new imageca
+        }
+        this.task = executorService.submit(() -> {
+            SwingUtilities.invokeLater(() -> canvas.setBusy(true));
+            System.out.println("Gray");
+            connector.createImage();
+            SwingUtilities.invokeLater(() -> {
+                canvas.setScreen(connector.getImage());
+                canvas.setBusy(false);
+            });
+        });
     }
 
     private void createMenu() {
@@ -257,7 +275,7 @@ public class WindowFrontEnd extends JFrame {
             for(int i: list.getSelectedIndices()) {
                 units.add(listModel.get(i));
             }
-            connector.setCalculatorUnits(units);
+            connector.useCalculatorUnits(units);
             dialog.dispose();
         });
         JScrollPane scrollPane = new JScrollPane(list);
@@ -279,8 +297,8 @@ public class WindowFrontEnd extends JFrame {
     private void openSettings(ActionEvent actionEvent) {
         JDialog dialog = new JDialog(this, true);
 
-        JPanel panel = new JPanel();
-        GroupLayout layout = new GroupLayout(panel);
+        JPanel settingsPanel = new JPanel();
+        GroupLayout layout = new GroupLayout(settingsPanel);
 
         GroupLayout.Group ver = layout.createSequentialGroup();
         GroupLayout.Group hor =  layout.createParallelGroup();
@@ -299,6 +317,10 @@ public class WindowFrontEnd extends JFrame {
             hor.addGroup(layout.createSequentialGroup().addComponent(key).addComponent(value));
             ver.addGroup(layout.createParallelGroup().addComponent(key).addComponent(value));
         }
+
+        layout.setHorizontalGroup(hor);
+        layout.setVerticalGroup(ver);
+        settingsPanel.setLayout(layout);
 
         JButton closeWithoutSave = new JButton("Exit without saving");
         closeWithoutSave.addActionListener(e -> dialog.dispose());
@@ -324,16 +346,22 @@ public class WindowFrontEnd extends JFrame {
             dialog.dispose();
         });
 
-        hor.addGroup(layout.createSequentialGroup().addComponent(closeWithoutSave).addComponent(closeWithSave));
-        ver.addGroup(layout.createParallelGroup().addComponent(closeWithoutSave).addComponent(closeWithSave));
-
-        layout.setHorizontalGroup(hor);
-        layout.setVerticalGroup(ver);
-
-        panel.setLayout(layout);
-
-        JScrollPane scrollPane = new JScrollPane(panel);
+        JScrollPane scrollPane = new JScrollPane(settingsPanel);
         dialog.add(scrollPane);
+        JPanel buttonPanel = new JPanel();
+        {
+            buttonPanel.setLayout(new GridLayout(1,2));
+            buttonPanel.add(closeWithoutSave);
+            buttonPanel.add(closeWithSave);
+        }
+
+        dialog.add(buttonPanel);
+        BorderLayout dialogLayout = new BorderLayout();
+        dialogLayout.addLayoutComponent(scrollPane, BorderLayout.CENTER);
+        dialogLayout.addLayoutComponent(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setLayout(dialogLayout);
+
         dialog.setSize(new Dimension(400, 600));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
