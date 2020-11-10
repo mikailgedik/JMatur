@@ -11,6 +11,7 @@ import org.lwjgl.opencl.CL22;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 //TODO use OpenCLHelper
@@ -224,8 +225,11 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         pDevice.put(device.getDevice());
         IntBuffer error = BufferUtils.createIntBuffer(1);
         //TODO: No idea how to use properties, but must be present for program
-        ByteBuffer properties = BufferUtils.createByteBuffer(Long.BYTES);
-        BufferUtils.zeroBuffer(properties);
+        ByteBuffer properties = BufferUtils.createByteBuffer(Long.BYTES * 3);
+        LongBuffer tmp = properties.asLongBuffer();
+        tmp.put(0, CL22.CL_CONTEXT_PLATFORM);
+        tmp.put(1, OpenCLHelper.getDevicePlatform(device.getDevice()));
+        tmp.put(2,0);
         device.setContext(CL22.clCreateContext(PointerBuffer.create(properties), device.getDevice(), null, 0, error));
         OpenCLHelper.check(error);
     }

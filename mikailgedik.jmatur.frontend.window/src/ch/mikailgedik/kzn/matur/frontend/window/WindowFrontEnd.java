@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WindowFrontEnd extends JFrame {
     private FractalCanvas canvas;
     private Point mousePoint;
+    private int mouseButton;
 
     private JPanel slaveContainer;
     private JButton exit;
@@ -33,6 +34,8 @@ public class WindowFrontEnd extends JFrame {
 
     private ExecutorService executorService;
     private Future<?> task;
+
+    private int[] selectedArea;
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
@@ -53,9 +56,9 @@ public class WindowFrontEnd extends JFrame {
 
     private void moveViewportByPixel(int pdx, int pdy) {
         if(task.isDone()) {
-            double dx = (1.0 * pdx / canvas.getWidth());
-            double dy = (1.0 * pdy / canvas.getHeight());
-            connector.moveRenderZone(dx * connector.getAspectRatio(), -dy);
+            double dx = (1.0 * pdx / canvas.getScreen().getWidth());
+            double dy = (1.0 * pdy / canvas.getScreen().getHeight());
+            connector.moveRenderZone(dx, -dy);
 
             refresh();
         }
@@ -84,16 +87,15 @@ public class WindowFrontEnd extends JFrame {
 
             start.addActionListener((event) -> {
                 showUnitsDialog();
-                boolean changed = false;
 
                 if(isSlave.isSelected()) {
                     try {
                         connector.initSlave();
                         setContentPane(slaveContainer);
-                        changed = true;
                     } catch (IOException e) {
                         e.printStackTrace();
-                        JOptionPane.showMessageDialog(this, "Failed to connect!");
+                        JOptionPane.showMessageDialog(this, "Failed to connect!\n" + e.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     connector.initMaster(-1);
@@ -101,15 +103,9 @@ public class WindowFrontEnd extends JFrame {
                     setJMenuBar(menuBar);
                     canvas.setBusy(true);
                     setContentPane(masterContainer);
-                    changed = true;
                 }
-                if(changed) {
-                    this.validate();
-                    splitPane.setDividerLocation(0.8);
-                    if(!connector.isSlave()) {
-                        refresh();
-                    }
-                }
+                this.validate();
+                splitPane.setDividerLocation(0.8);
             });
 
             editKernelRender.addActionListener((event) -> connector.setClKernelRender(showStringEditDialog(connector.getClKernelRender())));
@@ -135,14 +131,87 @@ public class WindowFrontEnd extends JFrame {
                 @Override
                 public void mousePressed(MouseEvent e) {
                     mousePoint = e.getPoint();
+                    mouseButton = e.getButton();
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if(task.isDone() && selectedArea != null) {
+                        double[] imgLoc = canvas.getSelectedAreaOnScreen();
+                        {
+                            double h = imgLoc[1];
+                            imgLoc[1] = imgLoc[3];
+                            imgLoc[3] = h;
+
+                            imgLoc[1] = 1 - imgLoc[1];
+                            imgLoc[3] = 1 - imgLoc[3];
+                        }
+
+                        double[] currCen = connector.getRenderCenter();
+                        double curHeight = connector.getRenderHeight();
+                        double curWidth = curHeight * connector.getAspectRatio();
+
+                        double[] start = {currCen[0] - curWidth/2, currCen[1] - curHeight/2};
+                        double newH = curHeight * (imgLoc[3] - imgLoc[1]);
+                        double newW = newH * connector.getAspectRatio();
+
+                        start[0] += imgLoc[0] * curWidth;
+                        start[1] += imgLoc[1] * curHeight;
+
+                        connector.setRenderParameters(new double[]{
+                                start[0] + newW /2,
+                                start[1] + newH / 2
+                        }, newH);
+                        refresh();
+                    }
+                    selectedArea = null;
+                    canvas.setSelectedArea(null, "");
+                    mouseButton = MouseEvent.NOBUTTON;
                 }
 
                 @Override
                 public void mouseDragged(MouseEvent e) {
                     if(mousePoint != null) {
-                        moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
-                        mousePoint = e.getPoint();
+                        if(mouseButton == MouseEvent.BUTTON1) {
+                            moveViewportByPixel(mousePoint.x - e.getX(), mousePoint.y - e.getY());
+                        } else if(mouseButton == MouseEvent.BUTTON3) {
+                            //Area
+                            if(selectedArea == null) {
+                                selectedArea = new int[]{
+                                        e.getX(),
+                                        e.getY(),
+                                        e.getX()+1,
+                                        e.getY()+1
+                                };
+                            } else {
+                                selectedArea[2] = e.getX();
+                                selectedArea[3] = e.getY();
+                                int h;
+                                if(selectedArea[0] > selectedArea[2]) {
+                                    h = selectedArea[2];
+                                    selectedArea[2] = selectedArea[0];
+                                    selectedArea[0] = h;
+                                }
+                                if(selectedArea[1] > selectedArea[3]) {
+                                    h = selectedArea[3];
+                                    selectedArea[3] = selectedArea[1];
+                                    selectedArea[1] = h;
+                                }
+                            }
+
+                            if(selectedArea[3] - selectedArea[1] < 10) {
+                                selectedArea[3] = selectedArea[1] + 10;
+                            }
+                            selectedArea[2] = (int)
+                                    (selectedArea[0] + (selectedArea[3] - selectedArea[1]) * connector.getAspectRatio());
+
+                            //selectedArea[0] = e.getX();
+                            //selectedArea[1] = e.getY();
+
+                            canvas.setSelectedArea(selectedArea, Arrays.toString(selectedArea));
+                        }
                     }
+                    mousePoint = e.getPoint();
                 }
 
                 @Override
@@ -159,7 +228,6 @@ public class WindowFrontEnd extends JFrame {
                 @Override
                 public void componentResized(ComponentEvent e) {
                     connector.setImagePixelHeight(canvas.getHeight());
-                    System.out.println("Canvas resize: " + canvas.getWidth() + " " + canvas.getHeight());
 
                     refresh();
                 }
@@ -175,11 +243,10 @@ public class WindowFrontEnd extends JFrame {
 
     private void refresh() {
         if(!task.isDone()) {
-            return;//Discard new imageca
+            return;//Discard new image
         }
         this.task = executorService.submit(() -> {
             SwingUtilities.invokeLater(() -> canvas.setBusy(true));
-            System.out.println("Gray");
             connector.createImage();
             SwingUtilities.invokeLater(() -> {
                 canvas.setScreen(connector.getImage());

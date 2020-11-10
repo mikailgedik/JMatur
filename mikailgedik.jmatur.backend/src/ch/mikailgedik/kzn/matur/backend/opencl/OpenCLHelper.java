@@ -7,6 +7,7 @@ import org.lwjgl.opencl.CL22;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 
 public class OpenCLHelper {
@@ -143,5 +144,15 @@ public class OpenCLHelper {
         check(error);
 
         return value;
+    }
+
+    public static long getDevicePlatform(long device) {
+        int error;
+        LongBuffer l = BufferUtils.createLongBuffer(1);
+
+        error = CL22.clGetDeviceInfo(device , CL22.CL_DEVICE_PLATFORM, l, null);
+        check(error);
+
+        return l.get();
     }
 }

@@ -16,13 +16,13 @@ int.setting.connection.port=5000
 #------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range
-double.setting.render.aspectRatio=2.3
+double.setting.render.aspectRatio=1.7777
 #Default zoom factor
 double.setting.render.zoomFactor=0.1
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=2000
+int.setting.calculation.startIterations=100
 string.setting.calculation.iterationModel=static
 #Max CPU threads
 int.setting.calculation.maxThreads=7

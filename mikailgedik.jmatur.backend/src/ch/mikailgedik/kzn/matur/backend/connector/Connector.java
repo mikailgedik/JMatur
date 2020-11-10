@@ -44,7 +44,6 @@ public class Connector {
     private final double[] renderCenter;
     private double renderHeight;
 
-
     public Connector() {
         image = null;
         settingsManager = SettingsManager.createDefaultSettingsManager();
@@ -54,7 +53,7 @@ public class Connector {
         clKernelCalculate = FileManager.getFileManager().readFile("/clkernels/mandelbrot.cl");
         clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
         renderCenter = new double[2];
-        renderHeight = 1;
+        renderHeight = 4;
     }
 
     public void initSlave() throws IOException {
@@ -219,9 +218,23 @@ public class Connector {
     /** @param dx relative distance
      * @param dy relative distance**/
     public void moveRenderZone(double dx, double dy) {
-        double renderWidth = renderHeight / aspectRatio;
+        double renderWidth = renderHeight * aspectRatio;
         renderCenter[0] += dx * renderWidth;
         renderCenter[1] += dy * renderHeight;
+    }
+
+    public void setRenderParameters(double[] center, double renderHeight) {
+        this.renderCenter[0] = center[0];
+        this.renderCenter[1] = center[1];
+        this.renderHeight = renderHeight;
+    }
+
+    public double getRenderHeight() {
+        return renderHeight;
+    }
+
+    public double[] getRenderCenter() {
+        return renderCenter;
     }
 
     public void setImagePixelHeight(int h) {
