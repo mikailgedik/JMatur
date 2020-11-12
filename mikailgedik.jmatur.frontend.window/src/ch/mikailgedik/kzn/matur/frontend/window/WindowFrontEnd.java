@@ -407,9 +407,13 @@ public class WindowFrontEnd extends JFrame {
                 }
                 try {
                     int frameRate = connector.getSettingI(Constants.RENDER_FRAMES_PER_SECOND);
+                    int h = connector.getImagePixelHeight();
+                    int w = (int)(connector.getAspectRatio() * h + .5);
+                    h += h%2;
+                    w += w%2;
                     Process process = Runtime.getRuntime()
                             .exec("ffmpeg -f image2pipe -framerate " + frameRate
-                                    + " -i - -f mp4 -movflags frag_keyframe+empty_moov pipe:1");
+                                            + " -i - -f mp4 -s " + w + "x" + h + " -pix_fmt yuv420p -c:v libx264 -movflags frag_keyframe+empty_moov pipe:1");
 
                     Thread toFile = new Thread(() -> {
                         FileOutputStream out = null;

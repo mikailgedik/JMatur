@@ -250,6 +250,10 @@ public class Connector {
         this.pixelHeight = h;
     }
 
+    public int getImagePixelHeight() {
+        return pixelHeight;
+    }
+
     public double getAspectRatio() {
         return aspectRatio;
     }
