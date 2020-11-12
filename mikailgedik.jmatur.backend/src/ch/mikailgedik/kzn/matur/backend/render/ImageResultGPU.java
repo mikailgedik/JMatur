@@ -24,7 +24,7 @@ public class ImageResultGPU extends ImageResult {
         this.kernel = kernel;
     }
 
-    public void create(int threads, long maxWaitingTime) {
+    public void create(long maxWaitingTime) {
         createScreen();
 
         pImage = MemMan.allocateAsWriteMemory(device, getScreen().getPixels().length * Integer.SIZE);

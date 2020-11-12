@@ -15,7 +15,6 @@ public interface Constants {
 
     String CALCULATION_START_ITERATION = "int.setting.calculation.startIterations";
     String CALCULATION_ITERATION_MODEL = "string.setting.calculation.iterationModel";
-    String CALCULATION_MAX_THREADS = "int.setting.calculation.maxThreads";
     String CALCULATION_MAX_WAITING_TIME_THREADS = "int.setting.calculation.maxWaitingTimeForThread";
 
     String DATA_LOGIC_CLUSTER_WIDTH = "int.setting.data.logicClusterWidth";

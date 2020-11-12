@@ -26,8 +26,6 @@ int.setting.render.framesPerSecond=25
 #Max iterations per render point for the first level
 int.setting.calculation.startIterations=100
 string.setting.calculation.iterationModel=static
-#Max CPU threads
-int.setting.calculation.maxThreads=7
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000

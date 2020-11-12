@@ -6,16 +6,15 @@ import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.DataSet;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
-import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
 import java.util.ArrayList;
 
 public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
-    private int logicClusterWidth, logicClusterHeight, iterations;
+    private int logicClusterWidth, logicClusterHeight;
     private DataSet currentDataSet;
-    private CalculableArea area;
     private boolean[] hasDone;
     private boolean done;
+    private ArrayList<Cluster> clusters;
     private ArrayList<CalculatorUnit> units;
     private int index;
     private final Object lock = new Object();
@@ -26,20 +25,17 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         units.forEach(u -> u.init(init));
     }
 
-    public void calculate(CalculableArea area, DataSet dataSet, int threads, long maxWaitingTime) {
+    public void calculate(CalculableArea area, DataSet dataSet, long maxWaitingTime) {
         setCurrentDataSet(dataSet);
-        this.area = area;
+        this.clusters = area.getClusters();
+
         setHasDone(new boolean[area.getClusters().size()]);
         setDone(false);
         setIndex(getHasDone().length -1);
         prepare();
 
         getUnits().forEach(u -> {
-            if(u instanceof CalculatorUnitCPU) {
-                ((CalculatorUnitCPU) u).setThreads(threads);
-            }
-            u.configureAndStart(new CalculatorUnit.CalculatorConfiguration(getLogicClusterWidth(), getLogicClusterHeight(),
-                    getIterations(), area.getPrecision(), this));
+            u.configureAndStart(new CalculatorUnit.CalculatorConfiguration(getLogicClusterWidth(), getLogicClusterHeight(),this));
         });
 
         getUnits().forEach(u -> {
@@ -52,10 +48,14 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         cleanUp();
     }
 
+    public void calculate(ArrayList<Calculable> list, DataSet dataSet, int threads, long maxWaitingTime) {
+        //CalculableArea
+    }
+
     public boolean accept(Calculable cal, int[] clusterData) {
         synchronized (lock) {
             if(!hasDone[cal.getCalculatorId()]) {
-                Cluster c = area.getClusters().get(cal.getCalculatorId());
+                Cluster c = clusters.get(cal.getCalculatorId());
                 c.setValue(clusterData);
                 acceptInternal(cal.getCalculatorId());
                 return true;
@@ -68,9 +68,9 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     public boolean accept(Calculable cal, CLDevice device, long address) {
         synchronized (lock) {
             if(!hasDone[cal.getCalculatorId()]) {
-                area.getClusters().get(cal.getCalculatorId()).setDevice(device, address);
+                clusters.get(cal.getCalculatorId()).setDevice(device, address);
                 acceptInternal(cal.getCalculatorId());
-                MemMan.moveToRAM(area.getClusters().get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
+                MemMan.moveToRAM(clusters.get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
                 return true;
             } else {
                 return false;
@@ -99,9 +99,10 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
                 index++;
                 index%=hasDone.length;
             } while(hasDone[index]);
-            double[] coo = currentDataSet.levelGetStartCoordinatesOfCluster(area.getDepth(),
-                    area.getClusters().get(index).getId());
-            return new Calculable(index, coo[0], coo[1]);
+            Cluster c = clusters.get(index);
+            double[] coo = currentDataSet.levelGetStartCoordinatesOfCluster(c.getDepth(),
+                    c.getId());
+            return new Calculable(index, coo[0], coo[1], c.getIterations(), currentDataSet.levelGetPrecisionAtDepth(c.getDepth()));
         }
     }
 
@@ -109,14 +110,11 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         currentDataSet = null;
         logicClusterWidth = 0;
         logicClusterHeight = 0;
-        iterations = 0;
-        area = null;
     }
 
     private void prepare() {
         logicClusterWidth = currentDataSet.getLogicClusterWidth();
         logicClusterHeight = currentDataSet.getLogicClusterHeight();
-        iterations = currentDataSet.levelGetIterationsForDepth(area.getDepth());
     }
 
     public ArrayList<CalculatorUnit> getUnits() {
@@ -131,16 +129,12 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         return logicClusterHeight;
     }
 
-    public int getIterations() {
-        return iterations;
-    }
-
     public DataSet getCurrentDataSet() {
         return currentDataSet;
     }
 
-    public CalculableArea getArea() {
-        return area;
+    public void setCurrentDataSet(DataSet currentDataSet) {
+        this.currentDataSet = currentDataSet;
     }
 
     public boolean[] getHasDone() {
@@ -151,44 +145,12 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         return done;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public Object getLock() {
-        return lock;
-    }
-
-    public void setLogicClusterWidth(int logicClusterWidth) {
-        this.logicClusterWidth = logicClusterWidth;
-    }
-
-    public void setLogicClusterHeight(int logicClusterHeight) {
-        this.logicClusterHeight = logicClusterHeight;
-    }
-
-    public void setIterations(int iterations) {
-        this.iterations = iterations;
-    }
-
-    public void setCurrentDataSet(DataSet currentDataSet) {
-        this.currentDataSet = currentDataSet;
-    }
-
-    public void setArea(CalculableArea area) {
-        this.area = area;
-    }
-
     public void setHasDone(boolean[] hasDone) {
         this.hasDone = hasDone;
     }
 
     public void setDone(boolean done) {
         this.done = done;
-    }
-
-    public void setUnits(ArrayList<CalculatorUnit> units) {
-        this.units = units;
     }
 
     public void setIndex(int index) {

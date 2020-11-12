@@ -23,8 +23,7 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     private long program, kernel;
     /** Prefix p stands for pointer, these are addresses for memory on the GPU*/
     private long pData, pMaxIterations, pClusterDimensions, pPrecision, pCoordinates, pAbort;
-    private int logicClusterWidth, logicClusterHeight, maxIterations;
-    private double precision;
+    private int logicClusterWidth, logicClusterHeight;
     private final AtomicBoolean abortable;
     private Thread thread;
     private volatile Calculable calculable;
@@ -88,8 +87,6 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     public synchronized void configureAndStart(CalculatorConfiguration configuration) {
         this.logicClusterWidth = configuration.getLogicClusterWidth();
         this.logicClusterHeight = configuration.getLogicClusterHeight();
-        this.maxIterations = configuration.getMaxIterations();
-        this.precision = configuration.getPrecision();
         CalculatorMandelbrot calculatorMandelbrot = configuration.getCalculatorMandelbrot();
 
         this.thread = new Thread(() -> {
@@ -152,44 +149,39 @@ public class CalculatorUnitGPU implements CalculatorUnit {
 
     private synchronized void releaseMemory() {
         MemMan.freeMemoryObject(pCoordinates);
+        MemMan.freeMemoryObject(pMaxIterations);
+        MemMan.freeMemoryObject(pPrecision);
 
+        pPrecision = 0;
+        pMaxIterations = 0;
         pCoordinates = 0;
     }
 
     private void setUnchangedParams() {
-        pMaxIterations = MemMan.allocateAsReadMemory(device, new int[]{this.maxIterations});
         pClusterDimensions = MemMan.allocateAsReadMemory(device, new int[]{logicClusterWidth, logicClusterHeight});
-        pPrecision = MemMan.allocateAsReadMemory(device, new double[]{this.precision});
         pAbort = MemMan.allocateAsReadMemory(device, new int[]{0});
 
         int[] error = new int[1];
-        error[0] = CL22.clSetKernelArg1p(kernel, 2, pMaxIterations);
-        assert error[0] == CL22.CL_SUCCESS: error[0];
 
         error[0] = CL22.clSetKernelArg1p(kernel, 3, pClusterDimensions);
-        assert error[0] == CL22.CL_SUCCESS: error[0];
-
-        error[0] = CL22.clSetKernelArg1p(kernel, 4, pPrecision);
         assert error[0] == CL22.CL_SUCCESS: error[0];
     }
 
     private void releaseUnchangedParams() {
         MemMan.freeMemoryObject(pClusterDimensions);
-        MemMan.freeMemoryObject(pMaxIterations);
-        MemMan.freeMemoryObject(pPrecision);
         MemMan.freeMemoryObject(pAbort);
 
         pClusterDimensions = 0;
-        pMaxIterations = 0;
-        pPrecision = 0;
         pAbort = 0;
     }
 
     private void allocateMemory(Calculable c) {
         double[] start = new double[] {c.getStartX(), c.getStartY()};
         pCoordinates = MemMan.allocateAsReadMemory(device, start);
-
         pData = MemMan.allocateReadWriteMemory(device, Integer.BYTES * logicClusterWidth * logicClusterHeight);
+        pMaxIterations = MemMan.allocateAsReadMemory(device, new int[]{c.getMaxIterations()});
+        pPrecision = MemMan.allocateAsReadMemory(device, new double[]{c.getPrecision()});
+
         int[] error = new int[1];
 
         error[0] = CL22.clEnqueueWriteBuffer(device.getCommandQueue(), pAbort, true, 0, new int[]{0}, null, null);
@@ -202,6 +194,12 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         assert error[0] == CL22.CL_SUCCESS: error[0];
 
         error[0] = CL22.clSetKernelArg1p(kernel, 5, pAbort);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
+        error[0] = CL22.clSetKernelArg1p(kernel, 2, pMaxIterations);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
+        error[0] = CL22.clSetKernelArg1p(kernel, 4, pPrecision);
         assert error[0] == CL22.CL_SUCCESS: error[0];
     }
 

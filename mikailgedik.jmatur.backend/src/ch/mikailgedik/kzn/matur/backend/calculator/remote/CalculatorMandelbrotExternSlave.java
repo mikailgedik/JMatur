@@ -103,7 +103,8 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
 
     @Override
     public boolean accept(Calculable cal, CLDevice device, long address) {
-        Cluster c = new Cluster(null, 0);
+        //Create dummy cluster
+        Cluster c = new Cluster(null, 0, 0,0);
         c.setDevice(device, address);
         MemMan.copyToRAM(c, configuration.getLogicClusterHeight() * configuration.getLogicClusterWidth());
         socket.sendResult(cal, c.getValue());

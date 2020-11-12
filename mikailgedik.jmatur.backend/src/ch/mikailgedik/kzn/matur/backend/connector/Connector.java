@@ -1,7 +1,7 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
+import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrotArea;
-import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitCPU;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitGPU;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorMandelbrotExternSlave;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorUnitExternMaster;
@@ -19,12 +19,11 @@ import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /** This class connects the frontend with the backend */
 public class Connector {
@@ -44,6 +43,9 @@ public class Connector {
     private final double[] renderCenter;
     private double renderHeight;
 
+    private Thread videoCreator;
+    private int[] videoCreationStage;
+
     public Connector() {
         image = null;
         settingsManager = SettingsManager.createDefaultSettingsManager();
@@ -54,6 +56,9 @@ public class Connector {
         clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
         renderCenter = new double[2];
         renderHeight = 4;
+
+        videoCreationStage = new int[2];
+        videoCreator = null;
     }
 
     public void initSlave() throws IOException {
@@ -90,8 +95,12 @@ public class Connector {
         } else {
             unit = (CalculatorUnitGPU) units.get(renderDevice);
         }
-        assert unit != null: "No local GPU available";
-        imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(), this.clKernelRender);
+        if(unit == null) {
+            System.out.println("Warning: using CPU to render");
+            imageCreator = new ImageCreatorCPU(dataSet, ColorFunction.MANDELBROT_COLOR_FUNCTION_HSB);
+        } else {
+            imageCreator = new ImageCreatorGPU(dataSet, unit.getDevice(), this.clKernelRender);
+        }
     }
 
     public void sendAvailableUnitsTo(Consumer<CalculatorUnit> receiver) {
@@ -168,7 +177,6 @@ public class Connector {
         int w = (int) (this.pixelHeight * aspectRatio + .5);
         double renderWidth = renderHeight * aspectRatio;
 
-        int threads = settingsManager.getI(Constants.CALCULATION_MAX_THREADS);
         long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
         double[] c = {
                 renderCenter[0] - renderWidth/2,
@@ -182,11 +190,11 @@ public class Connector {
         CalculableArea area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
 
         if(!area.getClusters().isEmpty()) {
-            calculatorMandelbrot.calculate(area, dataSet, threads, maxWaitingTime);
+            calculatorMandelbrot.calculate(area, dataSet, maxWaitingTime);
             dataSet.returnCalculableArea(area);
         }
 
-        image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
+        image = imageCreator.createScreen(w, h, region, maxWaitingTime);
         image = image.getScaledScreen(w, h);
     }
 
@@ -272,5 +280,23 @@ public class Connector {
 
     public void setClKernelRender(String clKernelRender) {
         this.clKernelRender = clKernelRender;
+    }
+
+    public void startVideoCreation(VideoPath path, OutputStream out) {
+        this.videoCreationStage[0] = 0;
+        this.videoCreationStage[1] = 0;
+        //Query items to calculate
+        ArrayList<Calculable> cl;
+
+        videoCreator = new Thread(() -> {
+
+
+        });
+        videoCreator.setName("VideoCreator");
+        videoCreator.start();
+    }
+
+    public int[] getVideoCreationStage() {
+        return videoCreationStage;
     }
 }

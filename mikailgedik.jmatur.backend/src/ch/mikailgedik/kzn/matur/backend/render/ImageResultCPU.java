@@ -15,9 +15,9 @@ public class ImageResultCPU extends ImageResult {
         this.colorFunction = colorFunction;
     }
 
-    public void create(int threads, long maxWaitingTime) {
+    public void create(long maxWaitingTime) {
         createScreen();
-        executorService = Executors.newFixedThreadPool(threads);
+        executorService = Executors.newSingleThreadExecutor();
         getDataSet().iterateOverLogicalRegion(getLogicalRegion(), this);
         executorService.shutdown();
         try {

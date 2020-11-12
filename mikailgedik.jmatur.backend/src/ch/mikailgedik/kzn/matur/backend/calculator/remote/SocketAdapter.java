@@ -92,8 +92,6 @@ public class SocketAdapter {
             out.writeInt(CONFIGURE);
             out.writeInt(configuration.getLogicClusterWidth());
             out.writeInt(configuration.getLogicClusterHeight());
-            out.writeInt(configuration.getMaxIterations());
-            out.writeDouble(configuration.getPrecision());
             //Do not write CalculatorMandelbrot field!
 
             out.flush();
@@ -110,6 +108,8 @@ public class SocketAdapter {
                     out.writeInt(c.getCalculatorId());
                     out.writeDouble(c.getStartX());
                     out.writeDouble(c.getStartY());
+                    out.writeInt(c.getMaxIterations());
+                    out.writeDouble(c.getPrecision());
                 } else {
                     out.writeInt(-1);
                 }
@@ -125,6 +125,9 @@ public class SocketAdapter {
             out.writeInt(calculable.getCalculatorId());
             out.writeDouble(calculable.getStartX());
             out.writeDouble(calculable.getStartY());
+            out.writeInt(calculable.getMaxIterations());
+            out.writeDouble(calculable.getPrecision());
+
             out.writeInt(data.length);
             for (int datum : data) {
                 out.writeInt(datum);
@@ -187,6 +190,8 @@ public class SocketAdapter {
                     calculable.getCalculatorId(),
                     calculable.getStartX(),
                     calculable.getStartY(),
+                    calculable.getMaxIterations(),
+                    calculable.getPrecision(),
                     data)));
             signals.notify();
         }
@@ -238,12 +243,15 @@ public class SocketAdapter {
         int id = in.readInt();
         double startX = in.readDouble();
         double startY = in.readDouble();
+        int maxIter = in.readInt();
+        double precision = in.readDouble();
+
         int[] data = new int[in.readInt()];
         for(int i = 0; i < data.length; i++) {
             data[i] = in.readInt();
         }
 
-        return new Signal.SignalResult(new Calculable.CalculableResult(id, startX, startY, data));
+        return new Signal.SignalResult(new Calculable.CalculableResult(id, startX, startY, maxIter, precision, data));
     }
 
     private Signal.SignalAbort getAbort() throws IOException {
@@ -259,11 +267,10 @@ public class SocketAdapter {
             if(id != -1) {
                 double startX = in.readDouble();
                 double startY = in.readDouble();
-
-                //System.out.println("Read calc: " + id + " " + startX + " " + startY);
-                calculables[i] = new Calculable(id, startX, startY);
+                int iter = in.readInt();
+                double precision = in.readDouble();
+                calculables[i] = new Calculable(id, startX, startY, iter, precision);
             } else {
-                //System.out.println("Read calc: null");
                 calculables[i] = null;
             }
         }
@@ -274,9 +281,7 @@ public class SocketAdapter {
     private Signal.SignalConfigure getConfigure()  throws IOException {
         int cW = in.readInt();
         int cH = in.readInt();
-        int iter = in.readInt();
-        double precision = in.readDouble();
         return new Signal.SignalConfigure(
-                new CalculatorUnit.CalculatorConfiguration(cW, cH, iter, precision, null));
+                new CalculatorUnit.CalculatorConfiguration(cW, cH, null));
     }
 }

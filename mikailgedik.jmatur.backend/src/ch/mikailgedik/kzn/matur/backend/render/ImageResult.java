@@ -23,7 +23,7 @@ public abstract class ImageResult extends DataAcceptor {
         maxIterations = dataSet.levelGetIterationsForDepth(logicalRegion.getDepth());
     }
 
-    public abstract void create(int threads, long maxWaitingTime);
+    public abstract void create(long maxWaitingTime);
 
     public DataSet getDataSet() {
         return dataSet;

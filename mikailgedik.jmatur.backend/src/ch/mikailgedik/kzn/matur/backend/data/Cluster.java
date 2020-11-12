@@ -5,16 +5,26 @@ import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import java.io.IOException;
 import java.io.Serializable;
 
-public class Cluster implements Serializable {
+public class Cluster {
     private int[] value;
-    private final int id;
+    private final int id, depth, iterations;
     private transient long gpuAddress;
     private transient CLDevice clDevice;
 
-    public Cluster(int[] value, int id) {
+    public Cluster(int[] value, int id, int depth, int iterations) {
         this.value = value;
+        this.depth = depth;
+        this.iterations = iterations;
         assert id >= 0: id;
         this.id = id;
+    }
+
+    public int getIterations() {
+        return iterations;
+    }
+
+    public int getDepth() {
+        return depth;
     }
 
     public int[] getValue() {
@@ -40,15 +50,5 @@ public class Cluster implements Serializable {
     public void setDevice(CLDevice clDevice, long gpuAddress) {
         this.clDevice = clDevice;
         this.gpuAddress = gpuAddress;
-    }
-
-    private void writeObject(java.io.ObjectOutputStream out)
-            throws IOException {
-        assert this.value != null;
-        out.defaultWriteObject();
-    }
-    private void readObject(java.io.ObjectInputStream in)
-            throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
     }
 }

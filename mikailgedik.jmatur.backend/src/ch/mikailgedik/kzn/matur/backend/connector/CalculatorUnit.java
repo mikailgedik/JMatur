@@ -23,16 +23,12 @@ public interface CalculatorUnit {
     }
 
     class CalculatorConfiguration implements Serializable {
-        private final int logicClusterWidth, logicClusterHeight, maxIterations;
-        private final double precision;
+        private final int logicClusterWidth, logicClusterHeight;
         private transient CalculatorMandelbrot calculatorMandelbrot;
 
-        public CalculatorConfiguration(int logicClusterWidth, int logicClusterHeight,
-                                       int maxIterations, double precision, CalculatorMandelbrot calculatorMandelbrot) {
+        public CalculatorConfiguration(int logicClusterWidth, int logicClusterHeight, CalculatorMandelbrot calculatorMandelbrot) {
             this.logicClusterWidth = logicClusterWidth;
             this.logicClusterHeight = logicClusterHeight;
-            this.maxIterations = maxIterations;
-            this.precision = precision;
             this.calculatorMandelbrot = calculatorMandelbrot;
         }
 
@@ -42,14 +38,6 @@ public interface CalculatorUnit {
 
         public int getLogicClusterHeight() {
             return logicClusterHeight;
-        }
-
-        public int getMaxIterations() {
-            return maxIterations;
-        }
-
-        public double getPrecision() {
-            return precision;
         }
 
         public CalculatorMandelbrot getCalculatorMandelbrot() {

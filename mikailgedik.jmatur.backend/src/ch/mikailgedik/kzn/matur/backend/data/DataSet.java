@@ -172,7 +172,7 @@ public abstract class DataSet {
         }
 
         allClus.add(new int[]{depth, id});
-        return new Cluster(null, id);
+        return new Cluster(null, id, depth, levelGetIterationsForDepth(depth));
     }
 
     public Region dataGetRegion(LogicalRegion logicalRegion) {
@@ -276,6 +276,12 @@ public abstract class DataSet {
 
     public void returnCalculableArea(CalculableArea area) {
         getLevels().get(area.getDepth()).addAll(area.getClusters());
+    }
+
+    public void addClusters(ArrayList<Cluster> clusters) {
+        for(Cluster c: clusters) {
+            getLevels().get(c.getDepth()).add(c);
+        }
     }
 
     public ArrayList<Level> getLevels() {

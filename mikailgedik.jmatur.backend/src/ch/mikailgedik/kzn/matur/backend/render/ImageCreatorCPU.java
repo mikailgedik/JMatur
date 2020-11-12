@@ -20,7 +20,7 @@ public class ImageCreatorCPU extends ImageCreator {
     }
 
     /** Does not scale the images down to minPixelWidth and minPixelHeight, but guarantees that the returned Screen has always bigger dimensions*/
-    public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region, int threads, long maxWaitingTime) {
+    public Screen createScreen(int minPixelWidth, int minPixelHeight, Region region, long maxWaitingTime) {
         //TODO buffer image results to avoid creating same images over and over
         //Only cropping has to be done anew
 
@@ -40,7 +40,7 @@ public class ImageCreatorCPU extends ImageCreator {
         }
 
         if(create) {
-            imageResult.create(threads, maxWaitingTime);
+            imageResult.create(maxWaitingTime);
             buffer.add(imageResult);
         }
 

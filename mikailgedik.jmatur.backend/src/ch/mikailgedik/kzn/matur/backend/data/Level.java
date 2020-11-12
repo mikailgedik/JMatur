@@ -63,6 +63,11 @@ public class Level implements Serializable {
         this.clusters.sort(comparator);
     }
 
+    public void add(Cluster c) {
+        this.clusters.add(c);
+        this.clusters.sort(comparator);
+    }
+
     private static Comparator<Cluster> comparator = (o1, o2) -> {
         assert o1.getId() != o2.getId(): "Two objects with same id:" + o1.getId() + ", " + o2.getId();
         return o1.getId() < o2.getId() ? -1: 1;
