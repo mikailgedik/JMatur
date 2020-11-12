@@ -19,6 +19,8 @@ int.setting.connection.port=5000
 double.setting.render.aspectRatio=1.7777
 #Default zoom factor
 double.setting.render.zoomFactor=0.1
+#Frames per second when exporting videos
+int.setting.render.framesPerSecond=25
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level

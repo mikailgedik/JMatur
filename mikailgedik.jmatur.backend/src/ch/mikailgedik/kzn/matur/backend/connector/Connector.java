@@ -188,8 +188,6 @@ public class Connector {
 
         image = imageCreator.createScreen(w, h, region, threads, maxWaitingTime);
         image = image.getScaledScreen(w, h);
-        //TODO
-        //FileManager.getFileManager().saveImage("/home/mikail/Desktop/out/file" + (counter++) +".png", image);
     }
 
     public Screen getImage() {
@@ -227,6 +225,17 @@ public class Connector {
         this.renderCenter[0] = center[0];
         this.renderCenter[1] = center[1];
         this.renderHeight = renderHeight;
+    }
+
+    public double[] relativeToAbsoluteCenter(double[] center) {
+        double renderWidth = renderHeight * aspectRatio;
+        double[] ret = this.renderCenter.clone();
+        ret[0] -= renderWidth / 2;
+        ret[1] -= renderHeight / 2;
+        ret[0] += renderWidth * center[0];
+        ret[1] += renderHeight * center[1];
+
+        return ret;
     }
 
     public double getRenderHeight() {

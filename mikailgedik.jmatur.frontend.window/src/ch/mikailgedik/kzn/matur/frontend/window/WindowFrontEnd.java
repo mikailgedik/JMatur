@@ -2,11 +2,14 @@ package ch.mikailgedik.kzn.matur.frontend.window;
 
 import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.connector.Connector;
+import ch.mikailgedik.kzn.matur.backend.connector.Constants;
+import ch.mikailgedik.kzn.matur.backend.connector.VideoPath;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -25,7 +28,7 @@ public class WindowFrontEnd extends JFrame {
     private JScrollPane scrollPane;
     private JSplitPane splitPane;
     private JMenuBar menuBar;
-
+    private JMenuItem[] animationItems;
     private JPanel loginContainer;
     private JCheckBox isSlave;
     private JButton start, openSettings, editKernelCalc, editKernelRender;
@@ -36,6 +39,8 @@ public class WindowFrontEnd extends JFrame {
     private Future<?> task;
 
     private int[] selectedArea;
+
+    private VideoPath videoPath;
 
     public WindowFrontEnd() {
         super("WindowFrontEnd");
@@ -73,6 +78,33 @@ public class WindowFrontEnd extends JFrame {
         setLocationRelativeTo(null);
 
         setVisible(true);
+    }
+
+    private double[] convertCoordinates(double[] imgLoc) {
+        {
+            double h = imgLoc[1];
+            imgLoc[1] = imgLoc[3];
+            imgLoc[3] = h;
+
+            imgLoc[1] = 1 - imgLoc[1];
+            imgLoc[3] = 1 - imgLoc[3];
+        }
+
+        double[] currCen = connector.getRenderCenter();
+        double curHeight = connector.getRenderHeight();
+        double curWidth = curHeight * connector.getAspectRatio();
+
+        double[] start = {currCen[0] - curWidth/2, currCen[1] - curHeight/2};
+        double newH = curHeight * (imgLoc[3] - imgLoc[1]);
+        double newW = newH * connector.getAspectRatio();
+
+        start[0] += imgLoc[0] * curWidth;
+        start[1] += imgLoc[1] * curHeight;
+
+        return new double[]{
+                start[0] + newW /2,
+                start[1] + newH / 2, newH
+        };
     }
 
     private void createComponents() {
@@ -138,34 +170,15 @@ public class WindowFrontEnd extends JFrame {
                 public void mouseReleased(MouseEvent e) {
                     if(task.isDone() && selectedArea != null) {
                         double[] imgLoc = canvas.getSelectedAreaOnScreen();
-                        {
-                            double h = imgLoc[1];
-                            imgLoc[1] = imgLoc[3];
-                            imgLoc[3] = h;
 
-                            imgLoc[1] = 1 - imgLoc[1];
-                            imgLoc[3] = 1 - imgLoc[3];
-                        }
+                        double[] nC = convertCoordinates(imgLoc);
 
-                        double[] currCen = connector.getRenderCenter();
-                        double curHeight = connector.getRenderHeight();
-                        double curWidth = curHeight * connector.getAspectRatio();
+                        connector.setRenderParameters(nC, nC[2]);
 
-                        double[] start = {currCen[0] - curWidth/2, currCen[1] - curHeight/2};
-                        double newH = curHeight * (imgLoc[3] - imgLoc[1]);
-                        double newW = newH * connector.getAspectRatio();
-
-                        start[0] += imgLoc[0] * curWidth;
-                        start[1] += imgLoc[1] * curHeight;
-
-                        connector.setRenderParameters(new double[]{
-                                start[0] + newW /2,
-                                start[1] + newH / 2
-                        }, newH);
                         refresh();
                     }
                     selectedArea = null;
-                    canvas.setSelectedArea(null, "");
+                    canvas.setSelectedArea(null, getInfoString());
                     mouseButton = MouseEvent.NOBUTTON;
                 }
 
@@ -205,10 +218,7 @@ public class WindowFrontEnd extends JFrame {
                             selectedArea[2] = (int)
                                     (selectedArea[0] + (selectedArea[3] - selectedArea[1]) * connector.getAspectRatio());
 
-                            //selectedArea[0] = e.getX();
-                            //selectedArea[1] = e.getY();
-
-                            canvas.setSelectedArea(selectedArea, Arrays.toString(selectedArea));
+                            canvas.setSelectedArea(selectedArea, getInfoString());
                         }
                     }
                     mousePoint = e.getPoint();
@@ -241,17 +251,33 @@ public class WindowFrontEnd extends JFrame {
         createMenu();
     }
 
+    private String getInfoString() {
+        String s = "Center x: " + connector.getRenderCenter()[0] + "\n" +
+                "Center y: " + connector.getRenderCenter()[1];
+        //TODO canvas.getSelectedAreaOnCanvas returns null on first request when dragging
+        if(canvas.getSelectedAreaOnCanvas() != null) {
+            double[] d = canvas.getSelectedAreaOnScreen();
+            d = convertCoordinates(d);
+            s += "\nSelected center x: " + d[0] + "\n" +
+                    "Selected center y: " + d[1] + "\n" +
+                    "Selected center height: " + d[2] + "\n";
+        }
+        return s;
+    }
+
     private void refresh() {
         if(!task.isDone()) {
             return;//Discard new image
         }
-        this.task = executorService.submit(() -> {
-            SwingUtilities.invokeLater(() -> canvas.setBusy(true));
-            connector.createImage();
-            SwingUtilities.invokeLater(() -> {
-                canvas.setScreen(connector.getImage());
-                canvas.setBusy(false);
-            });
+        this.task = executorService.submit(this::refreshWithOutBlock);
+    }
+
+    private void refreshWithOutBlock() {
+        SwingUtilities.invokeLater(() -> canvas.setBusy(true));
+        connector.createImage();
+        SwingUtilities.invokeLater(() -> {
+            canvas.setScreen(connector.getImage(), getInfoString());
+            canvas.setBusy(false);
         });
     }
 
@@ -278,26 +304,194 @@ public class WindowFrontEnd extends JFrame {
             //Fractal
             JMenu menuFractal = new JMenu("Fractal");
 
-            JMenuItem selectFrac = new JMenuItem("Select Fractal");
-            selectFrac.addActionListener(this::selectFractal);
-            menuFractal.add(selectFrac);
-
             JMenuItem setViewport = new JMenuItem("Set viewport");
-            selectFrac.addActionListener(this::setViewport);
+            setViewport.addActionListener(this::setViewport);
             menuFractal.add(setViewport);
 
             menuBar.add(menuFractal);
         }
         {
             //Settings
-            JMenu menuSetting = new JMenu("Settings");
+            JMenu menuAnimation = new JMenu("Animation");
 
-            JMenuItem openSettings = new JMenuItem("Open settings");
-            openSettings.addActionListener(this::openSettings);
+            String[] text = {
+                    "Add position to path",
+                    "Render animation path",
+                    "Import animation path",
+                    "Export animation path",
+                    "Destroy video path"
+            };
+            ActionListener[] lis = {
+                    this::addAnimationPosition,
+                    this::renderAnimation,
+                    this::importAnimationPath,
+                    this::exportAnimationPath,
+                    this::destroyVideoPath
+            };
+            KeyStroke[] accelerators = {
+                    KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.ALT_DOWN_MASK),
+                    null,
+                    KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.ALT_DOWN_MASK),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.ALT_DOWN_MASK),
+                    null
+            };
 
-            menuSetting.add(openSettings);
+            animationItems = new JMenuItem[text.length];
 
-            menuBar.add(menuSetting);
+            for(int i = 0; i < text.length; i++) {
+                animationItems[i] = new JMenuItem(text[i]);
+                animationItems[i].addActionListener(lis[i]);
+                animationItems[i].setEnabled(false);
+                animationItems[i].setAccelerator(accelerators[i]);
+                menuAnimation.add(animationItems[i]);
+            }
+            animationItems[0].setEnabled(true);
+            animationItems[2].setEnabled(true);
+            menuBar.add(menuAnimation);
+        }
+    }
+
+    private void setVideoPath(VideoPath p) {
+        this.videoPath = p;
+        if(p == null) {
+            destroyVideoPath(null);
+        } else {
+            for (JMenuItem animationItem : this.animationItems) {
+                animationItem.setEnabled(true);
+            }
+        }
+    }
+
+    private void createVideoPath(VideoPath.VideoPoint p) {
+        setVideoPath(new VideoPath(p));
+    }
+
+    private void destroyVideoPath(ActionEvent event) {
+        this.videoPath = null;
+        for (JMenuItem animationItem : this.animationItems) {
+            animationItem.setEnabled(false);
+        }
+        animationItems[0].setEnabled(true);
+        animationItems[2].setEnabled(true);
+    }
+
+    private void addAnimationPosition(ActionEvent event) {
+        for (JMenuItem animationItem : this.animationItems) {
+            animationItem.setEnabled(true);
+        }
+        if(this.videoPath == null) {
+            createVideoPath(new VideoPath.VideoPoint(
+                    connector.getRenderCenter(), connector.getRenderHeight()
+            ));
+        } else {
+            try {
+                int frames = Integer.parseInt(JOptionPane.showInputDialog(this, "How many frames will there " +
+                        "be between this point and the previous?", "Input needed", JOptionPane.QUESTION_MESSAGE));
+                this.videoPath.addNext(new VideoPath.VideoPoint(
+                        connector.getRenderCenter(), connector.getRenderHeight()), frames);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Could not parse number; no breakpoint set",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void renderAnimation(ActionEvent event) {
+        if(task.isDone()) {
+            this.task = this.executorService.submit(() -> {
+                //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
+                //https://trac.ffmpeg.org/wiki/Slideshow
+                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY);
+                if(f == null) {
+                    return;
+                }
+                try {
+                    int frameRate = connector.getSettingI(Constants.RENDER_FRAMES_PER_SECOND);
+                    Process process = Runtime.getRuntime()
+                            .exec("ffmpeg -f image2pipe -framerate " + frameRate
+                                    + " -i - -f mp4 -movflags frag_keyframe+empty_moov pipe:1");
+
+                    Thread toFile = new Thread(() -> {
+                        FileOutputStream out = null;
+                        try {
+                            out = new FileOutputStream(f);
+                            process.getInputStream().transferTo(out);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            if(out != null) {
+                                try {
+                                    out.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    });
+                    toFile.start();
+
+                    Thread printErr = new Thread(() -> {
+                        try {
+                            InputStream in = process.getErrorStream();
+                            int i;
+                            while((i = in.read()) != -1) {
+                                System.err.print((char)i);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                    printErr.start();
+                    BufferedOutputStream processOut = new BufferedOutputStream(process.getOutputStream());
+
+                    for(VideoPath.VideoPoint p: videoPath) {
+                        connector.setRenderParameters(p.getCenter(), p.getHeight());
+                        refreshWithOutBlock();
+                        ImageIO.write(connector.getImage().toBufferedImage(), "png", processOut);
+                        processOut.flush();
+                    }
+                    processOut.close();
+                    process.getOutputStream().close();
+
+                    toFile.join();
+                    printErr.interrupt();
+                    if(process.waitFor() != 0) {
+                        throw new RuntimeException("FFMPEG finished with exit code " + process.exitValue());
+                    }
+                } catch (IOException | InterruptedException e) {
+                    JOptionPane.showMessageDialog(this,
+                            "An error occurred during image creation\n" + e.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void importAnimationPath(ActionEvent event) {
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY);
+        if(file != null) {
+            try {
+                FileInputStream in = new FileInputStream(file);
+                setVideoPath(VideoPath.read(in));
+                in.close();
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
+        }
+    }
+
+    private void exportAnimationPath(ActionEvent event) {
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY);
+        if(file != null) {
+            try {
+                FileOutputStream out = new FileOutputStream(file);
+                VideoPath.write(out, this.videoPath);
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                throw new RuntimeException();
+            }
         }
     }
 
@@ -435,11 +629,43 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void setViewport(ActionEvent actionEvent) {
-        assert false;
-    }
+        if(task.isDone()) {
+            JDialog dialog = new JDialog(this, true);
+            JButton ok = new JButton("Ok"), cancel = new JButton("Cancel");
+            JTextField[] fields = {
+                    new JTextField(String.valueOf(connector.getRenderCenter()[0])),
+                    new JTextField(String.valueOf(connector.getRenderCenter()[1])),
+                    new JTextField(String.valueOf(connector.getRenderHeight()))
+            };
 
-    private void selectFractal(ActionEvent actionEvent) {
-        assert false;
+            JPanel panel = new JPanel();
+            for(JTextField f: fields) {
+                panel.add(f);
+            }
+            cancel.addActionListener((ev) -> dialog.dispose());
+            ok.addActionListener((ev) -> {
+                try {
+                    double[] c = {Double.parseDouble(fields[0].getText()),
+                            Double.parseDouble(fields[1].getText())};
+                    double h = Double.parseDouble(fields[2].getText());
+                    connector.setRenderParameters(c, h);
+                    refresh();
+                } catch(NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Could not parse number; no breakpoint set",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                dialog.dispose();
+            });
+
+            panel.add(ok);
+            panel.add(cancel);
+            panel.setLayout(new GridLayout(5,1, 30, 10));
+            dialog.setContentPane(panel);
+
+            dialog.setSize(new Dimension(400, 250));
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+        }
     }
 
     private void fileClose(ActionEvent actionEvent) {
@@ -448,35 +674,28 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void fileOpen(ActionEvent actionEvent) {
-        try {
-            UIManager.LookAndFeelInfo[] i = UIManager.getInstalledLookAndFeels();
-            UIManager.setLookAndFeel(i[(int)(Math.random() * i.length)].getClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        }
-        JFileChooser dialog = new JFileChooser();
-        dialog.setDialogTitle("Save in directory");
-
-        dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        dialog.setMultiSelectionEnabled(false);
-        if(dialog.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            connector.readData(dialog.getSelectedFile());
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY);
+        if(f != null) {
+            connector.readData(f);
         }
     }
 
     private void fileSave(ActionEvent actionEvent) {
-        try {
-            UIManager.LookAndFeelInfo[] i = UIManager.getInstalledLookAndFeels();
-            UIManager.setLookAndFeel(i[(int)(Math.random() * i.length)].getClassName());
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY);
+        if(f != null) {
+            connector.saveData(f);
         }
+    }
+
+    private File showFileDialog(String title, int mode) {
         JFileChooser dialog = new JFileChooser();
-        dialog.setDialogTitle("Load directory");
-        dialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        dialog.setDialogTitle(title);
+        dialog.setFileSelectionMode(mode);
         dialog.setMultiSelectionEnabled(false);
         if(dialog.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            connector.saveData(dialog.getSelectedFile());
+            return dialog.getSelectedFile();
+        } else {
+            return null;
         }
     }
 

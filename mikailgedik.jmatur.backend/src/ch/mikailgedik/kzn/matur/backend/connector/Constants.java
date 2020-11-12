@@ -11,6 +11,7 @@ public interface Constants {
 
     String RENDER_ASPECT_RATIO = "double.setting.render.aspectRatio";
     String RENDER_ZOOM_FACTOR = "double.setting.render.zoomFactor";
+    String RENDER_FRAMES_PER_SECOND = "int.setting.render.framesPerSecond";
 
     String CALCULATION_START_ITERATION = "int.setting.calculation.startIterations";
     String CALCULATION_ITERATION_MODEL = "string.setting.calculation.iterationModel";

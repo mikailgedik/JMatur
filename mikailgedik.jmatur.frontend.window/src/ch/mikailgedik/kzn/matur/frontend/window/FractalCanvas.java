@@ -14,7 +14,7 @@ public class FractalCanvas extends JComponent {
     private boolean busy;
     private int[] selectedAreaOnCanvas;
     private int[] selectedAreaOnScreen;
-    private String selectedString;
+    private String infoString;
 
     public FractalCanvas() {
         screen = null;
@@ -34,16 +34,19 @@ public class FractalCanvas extends JComponent {
 
         System.arraycopy(screen.getPixels(), 0, buffer, 0, buffer.length);
 
-        if(selectedAreaOnCanvas != null) {
-            Graphics gI = image.getGraphics();
-            gI.setColor(Color.RED);
-            gI.drawString(selectedString, selectedAreaOnCanvas[0] - 5, selectedAreaOnCanvas[1] - 20);
-            gI.fillOval(selectedAreaOnScreen[0] - 5, selectedAreaOnScreen[1] - 5,10,10);
-        }
-
         g.drawImage(image, (getWidth() - screen.getWidth()) / 2, (getHeight() - screen.getHeight()) / 2, null);
 
+        if(infoString != null) {
+            g.setColor(Color.WHITE);
+            int y = getHeight()/10 + 5;
+            for(String s: infoString.split("\n")) {
+                g.drawString(s, 40, y);
+                y += 10;
+            }
+        }
+
         if(selectedAreaOnCanvas != null) {
+            g.setColor(new Color(0x808080));
             g.fillRect(selectedAreaOnCanvas[0], selectedAreaOnCanvas[1], selectedAreaOnCanvas[2] - selectedAreaOnCanvas[0],
                     selectedAreaOnCanvas[3] - selectedAreaOnCanvas[1]);
         }
@@ -56,7 +59,8 @@ public class FractalCanvas extends JComponent {
         }
     }
 
-    public void setScreen(Screen screen) {
+    public void setScreen(Screen screen, String infoString) {
+        this.infoString = infoString;
         this.screen = screen;
         if(this.image == null || this.image.getWidth() != screen.getWidth() ||
                 this.image.getHeight() != screen.getHeight()) {
@@ -77,8 +81,8 @@ public class FractalCanvas extends JComponent {
         return screen;
     }
 
-    public void setSelectedArea(int[] selectedArea, String selectedString) {
-        this.selectedString = selectedString;
+    public void setSelectedArea(int[] selectedArea, String infoString) {
+        this.infoString = infoString;
         this.selectedAreaOnCanvas = selectedArea;
         if(selectedAreaOnCanvas != null) {
             this.selectedAreaOnScreen = new int[] {
@@ -87,9 +91,15 @@ public class FractalCanvas extends JComponent {
                     selectedAreaOnCanvas[2] - (getWidth() - screen.getWidth()) / 2,
                     selectedAreaOnCanvas[3] - (getHeight() - screen.getHeight()) / 2
             };
+        } else {
+            selectedAreaOnScreen = null;
         }
 
         repaint();
+    }
+
+    public int[] getSelectedAreaOnCanvas() {
+        return selectedAreaOnCanvas;
     }
 
     public double[] getSelectedAreaOnScreen() {
