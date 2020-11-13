@@ -6,9 +6,7 @@ import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitGPU;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorMandelbrotExternSlave;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorUnitExternMaster;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.SocketAdapter;
-import ch.mikailgedik.kzn.matur.backend.data.CalculableArea;
-import ch.mikailgedik.kzn.matur.backend.data.DataSet;
-import ch.mikailgedik.kzn.matur.backend.data.Region;
+import ch.mikailgedik.kzn.matur.backend.data.*;
 import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import ch.mikailgedik.kzn.matur.backend.render.ColorFunction;
@@ -17,9 +15,9 @@ import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorCPU;
 import ch.mikailgedik.kzn.matur.backend.render.ImageCreatorGPU;
 import ch.mikailgedik.kzn.matur.backend.settings.SettingsManager;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.io.*;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -40,11 +38,13 @@ public class Connector {
 
     private double aspectRatio;
     private int pixelHeight;
+    private int pixelWidth;
+
     private final double[] renderCenter;
     private double renderHeight;
 
     private Thread videoCreator;
-    private int[] videoCreationStage;
+    private int frames, currentFrame;
 
     public Connector() {
         image = null;
@@ -57,7 +57,6 @@ public class Connector {
         renderCenter = new double[2];
         renderHeight = 4;
 
-        videoCreationStage = new int[2];
         videoCreator = null;
     }
 
@@ -172,12 +171,21 @@ public class Connector {
     }
 
     public synchronized void createImage() {
-        int h = this.pixelHeight;
-        // The +.5 is for rounding
-        int w = (int) (this.pixelHeight * aspectRatio + .5);
-        double renderWidth = renderHeight * aspectRatio;
+        Region region = getRenderRegion();
+        CalculableArea area = createCurrentArea(region);
 
         long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
+        if(!area.getClusters().isEmpty()) {
+            calculatorMandelbrot.calculate(area, dataSet, maxWaitingTime);
+            dataSet.returnCalculableArea(area);
+        }
+
+        image = imageCreator.createScreen(this.pixelWidth, this.pixelHeight, region, maxWaitingTime);
+        image = image.getScaledScreen(this.pixelWidth, this.pixelHeight);
+    }
+
+    private Region getRenderRegion() {
+        double renderWidth = renderHeight * aspectRatio;
         double[] c = {
                 renderCenter[0] - renderWidth/2,
                 renderCenter[0] + renderWidth/2,
@@ -185,17 +193,11 @@ public class Connector {
                 renderCenter[1] + renderHeight/2
         };
 
-        Region region = new Region(c[0], c[2], c[1], c[3]);
+        return new Region(c[0], c[2], c[1], c[3]);
+    }
 
-        CalculableArea area = dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/w, 1.0 * region.getHeight()/h));
-
-        if(!area.getClusters().isEmpty()) {
-            calculatorMandelbrot.calculate(area, dataSet, maxWaitingTime);
-            dataSet.returnCalculableArea(area);
-        }
-
-        image = imageCreator.createScreen(w, h, region, maxWaitingTime);
-        image = image.getScaledScreen(w, h);
+    private CalculableArea createCurrentArea(Region region) {
+        return dataSet.createCalculableArea(region, Math.min(1.0 * region.getWidth()/this.pixelWidth, 1.0 * region.getHeight()/this.pixelHeight));
     }
 
     public Screen getImage() {
@@ -235,17 +237,6 @@ public class Connector {
         this.renderHeight = renderHeight;
     }
 
-    public double[] relativeToAbsoluteCenter(double[] center) {
-        double renderWidth = renderHeight * aspectRatio;
-        double[] ret = this.renderCenter.clone();
-        ret[0] -= renderWidth / 2;
-        ret[1] -= renderHeight / 2;
-        ret[0] += renderWidth * center[0];
-        ret[1] += renderHeight * center[1];
-
-        return ret;
-    }
-
     public double getRenderHeight() {
         return renderHeight;
     }
@@ -256,6 +247,7 @@ public class Connector {
 
     public void setImagePixelHeight(int h) {
         this.pixelHeight = h;
+        this.pixelWidth = (int)(getAspectRatio() * h + .5);
     }
 
     public int getImagePixelHeight() {
@@ -282,21 +274,125 @@ public class Connector {
         this.clKernelRender = clKernelRender;
     }
 
-    public void startVideoCreation(VideoPath path, OutputStream out) {
-        this.videoCreationStage[0] = 0;
-        this.videoCreationStage[1] = 0;
+    public void startVideoCreation(VideoPath path, final OutputStream out) {
         //Query items to calculate
-        ArrayList<Calculable> cl;
+
+        ArrayList<LogicalRegion> regions = new ArrayList<>();
+        ArrayList<Cluster> cl = new ArrayList<>();
+        frames = 0;
+        loop: for(VideoPath.VideoPoint p: path) {
+            frames++;
+            this.setRenderParameters(p.getCenter(), p.getHeight());
+            CalculableArea area = createCurrentArea(getRenderRegion());
+            LogicalRegion r1 = area.getRegion();
+            for(LogicalRegion r2: regions) {
+                if(r1.getDepth() == r2.getDepth() &&
+                        r1.getStartX() <= r2.getStartX() && r1.getStartY() <= r2.getStartY() &&
+                r1.getEndX() >= r2.getEndX() && r1.getEndY() >= r2.getEndY()) {
+                    continue loop;
+                }
+            }
+            regions.add(r1);
+            area.getClusters().forEach(nC -> {
+                for(Cluster c: cl) {
+                    if(c.getId() == nC.getId() && c.getDepth() == nC.getDepth()) {
+                        return;
+                    }
+                }
+                cl.add(nC);
+            });
+        }
+
+        int tot = cl.size();
+        cl.removeIf(u -> u.getValue() != null || u.getDevice() != null);
+        System.out.println("Total " + tot + ", to calculate: " + cl.size());
 
         videoCreator = new Thread(() -> {
+            long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
+            calculatorMandelbrot.calculate(cl, dataSet, maxWaitingTime);
 
+            System.out.println("Calculated");
 
+            dataSet.addClusters(cl);
+
+            int frameRate = getSettingI(Constants.RENDER_FRAMES_PER_SECOND);
+            int h = getImagePixelHeight();
+            int w = (int)(getAspectRatio() * h + .5);
+            h += h%2;
+            w += w%2;
+            try {
+                Process process = Runtime.getRuntime()
+                        .exec("ffmpeg -f image2pipe -framerate " + frameRate
+                                + " -i - -f mp4 -s " + w + "x" + h + " -pix_fmt yuv420p -c:v libx264 -movflags frag_keyframe+empty_moov pipe:1");
+                Thread toFile = new Thread(() -> {
+                    try {
+                        process.getInputStream().transferTo(out);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if(out != null) {
+                            try {
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
+                toFile.start();
+                Thread printErr = new Thread(() -> {
+                    try {
+                        InputStream in = process.getErrorStream();
+                        int i;
+                        while((i = in.read()) != -1) {
+                            System.err.print((char)i);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+                printErr.start();
+                BufferedOutputStream processOut = new BufferedOutputStream(process.getOutputStream());
+
+                this.currentFrame = 0;
+                for(VideoPath.VideoPoint p: path) {
+                    this.setRenderParameters(p.getCenter(), p.getHeight());
+                    this.createImage();
+                    ImageIO.write(getImage().toBufferedImage(), "png", processOut);
+                    this.currentFrame++;
+                }
+                processOut.close();
+                process.getOutputStream().close();
+
+                toFile.join();
+                if(process.waitFor() != 0) {
+                    throw new RuntimeException("FFMPEG finished with exit code " + process.exitValue());
+                }
+                process.getOutputStream().close();
+                process.getErrorStream().close();
+                process.getInputStream().close();
+                System.out.println("Rendered");
+            } catch (IOException | InterruptedException e) {
+                //throw new RuntimeException(e);
+                JOptionPane.showMessageDialog(null,
+                        "An error occurred during image creation\n" + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
         });
+
         videoCreator.setName("VideoCreator");
         videoCreator.start();
     }
 
-    public int[] getVideoCreationStage() {
-        return videoCreationStage;
+    public Thread getVideoCreator() {
+        return videoCreator;
+    }
+
+    public double[] getVideoCreationStage() {
+        return new double[] {
+                calculatorMandelbrot.getProgress(),
+                1.0 * this.currentFrame / frames
+        };
     }
 }

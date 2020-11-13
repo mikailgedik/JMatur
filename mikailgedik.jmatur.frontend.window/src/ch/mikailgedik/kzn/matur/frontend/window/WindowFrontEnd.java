@@ -266,10 +266,9 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void refresh() {
-        if(!task.isDone()) {
-            return;//Discard new image
+        if(task.isDone()) {
+            this.task = executorService.submit(this::refreshWithOutBlock);
         }
-        this.task = executorService.submit(this::refreshWithOutBlock);
     }
 
     private void refreshWithOutBlock() {
@@ -316,23 +315,26 @@ public class WindowFrontEnd extends JFrame {
 
             String[] text = {
                     "Add position to path",
-                    "Render animation path",
+                    "Render and show animation path (inefficient)",
                     "Import animation path",
                     "Export animation path",
-                    "Destroy video path"
+                    "Destroy video path",
+                    "Render animation path"
             };
             ActionListener[] lis = {
                     this::addAnimationPosition,
-                    this::renderAnimation,
+                    this::renderAndShowAnimation,
                     this::importAnimationPath,
                     this::exportAnimationPath,
-                    this::destroyVideoPath
+                    this::destroyVideoPath,
+                    this::renderAnimation
             };
             KeyStroke[] accelerators = {
                     KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.ALT_DOWN_MASK),
                     null,
                     KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.ALT_DOWN_MASK),
                     KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.ALT_DOWN_MASK),
+                    null,
                     null
             };
 
@@ -398,6 +400,72 @@ public class WindowFrontEnd extends JFrame {
 
     private void renderAnimation(ActionEvent event) {
         if(task.isDone()) {
+            JDialog dialog = new JDialog(this, true);
+            dialog.setLayout(new GridLayout(4,1));
+
+            final JProgressBar[] bars = new JProgressBar[2];
+            JTextField[] desc = new JTextField[2];
+            desc[0] = new JTextField("Calculation progress: 0%");
+            desc[1] = new JTextField("Render progress:      0%");
+            for(int i = 0; i < bars.length; i++) {
+                desc[i].setEditable(false);
+                desc[i].setBorder(BorderFactory.createLineBorder(Color.GREEN, 5, true));
+                dialog.add(desc[i]);
+
+                bars[i] = new JProgressBar();
+                dialog.add(bars[i]);
+            }
+
+            Thread updater = new Thread(() -> {
+                try {
+                    while(true) {
+                        Thread.sleep(250);
+                        double[] d = connector.getVideoCreationStage();
+                        synchronized (bars) {
+                            if(bars[0] != null) {
+                                bars[0].setValue((int) (d[0] * 100 + .5));
+                                bars[1].setValue((int) (d[1] * 100 + .5));
+                                desc[0].setText("Calculation progress: " + (int) (d[0] * 100 + .5) + "%");
+                                desc[1].setText("Render progress:      " + (int) (d[1] * 100 + .5) + "%");
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            this.task = this.executorService.submit(() -> {
+                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY);
+                try {
+                    if(f != null) {
+                        canvas.setBusy(true);
+                        FileOutputStream ooo = new FileOutputStream(f);
+                        connector.startVideoCreation(this.videoPath, ooo);
+                        updater.start();
+                        connector.getVideoCreator().join();
+                        ooo.close();
+                        synchronized (bars) {
+                            bars[0] = null;
+                            dialog.dispose();
+                        }
+                        canvas.setBusy(false);
+                    }
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            dialog.setSize(new Dimension(400, 250));
+            dialog.setLocationRelativeTo(this);
+            dialog.setVisible(true);
+        }
+    }
+
+    private void renderAndShowAnimation(ActionEvent event) {
+        if(task.isDone()) {
             this.task = this.executorService.submit(() -> {
                 //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
                 //https://trac.ffmpeg.org/wiki/Slideshow
@@ -458,10 +526,12 @@ public class WindowFrontEnd extends JFrame {
                     process.getOutputStream().close();
 
                     toFile.join();
-                    printErr.interrupt();
                     if(process.waitFor() != 0) {
                         throw new RuntimeException("FFMPEG finished with exit code " + process.exitValue());
                     }
+                    process.getOutputStream().close();
+                    process.getErrorStream().close();
+                    process.getInputStream().close();
                 } catch (IOException | InterruptedException e) {
                     JOptionPane.showMessageDialog(this,
                             "An error occurred during image creation\n" + e.getMessage(),

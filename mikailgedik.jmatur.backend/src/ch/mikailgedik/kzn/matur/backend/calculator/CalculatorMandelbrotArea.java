@@ -26,17 +26,19 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     }
 
     public void calculate(CalculableArea area, DataSet dataSet, long maxWaitingTime) {
-        setCurrentDataSet(dataSet);
-        this.clusters = area.getClusters();
+        calculate(area.getClusters(), dataSet, maxWaitingTime);
+    }
 
-        setHasDone(new boolean[area.getClusters().size()]);
+    public void calculate(ArrayList<Cluster> list, DataSet dataSet, long maxWaitingTime) {
+        setCurrentDataSet(dataSet);
+        this.clusters = list;
+
+        setHasDone(new boolean[clusters.size()]);
         setDone(false);
         setIndex(getHasDone().length -1);
         prepare();
 
-        getUnits().forEach(u -> {
-            u.configureAndStart(new CalculatorUnit.CalculatorConfiguration(getLogicClusterWidth(), getLogicClusterHeight(),this));
-        });
+        getUnits().forEach(u -> u.configureAndStart(new CalculatorUnit.CalculatorConfiguration(getLogicClusterWidth(), getLogicClusterHeight(),this)));
 
         getUnits().forEach(u -> {
             try {
@@ -46,10 +48,6 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
             }
         });
         cleanUp();
-    }
-
-    public void calculate(ArrayList<Calculable> list, DataSet dataSet, int threads, long maxWaitingTime) {
-        //CalculableArea
     }
 
     public boolean accept(Calculable cal, int[] clusterData) {
@@ -90,6 +88,19 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         }
     }
 
+    public double getProgress() {
+        if(hasDone == null) {
+            return 1;
+        }
+        int c = 0;
+        for(boolean b: hasDone) {
+            if(b) {
+                c++;
+            }
+        }
+        return 1.0 * c / hasDone.length;
+    }
+
     public Calculable get() {
         synchronized (lock) {
             if(done) {
@@ -107,6 +118,7 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     }
 
     private void cleanUp() {
+        hasDone = null;
         currentDataSet = null;
         logicClusterWidth = 0;
         logicClusterHeight = 0;

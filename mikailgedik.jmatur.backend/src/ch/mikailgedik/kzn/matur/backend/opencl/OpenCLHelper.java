@@ -109,7 +109,7 @@ public class OpenCLHelper {
     }
 
     public static String queryDeviceInfoString(long device, int info) {
-        ByteBuffer value = queryDeviceInfo(device, info);
+        ByteBuffer value = queryDeviceInfoRaw(device, info);
 
         StringBuilder builder = new StringBuilder(value.capacity());
         for(int i = 0; i < builder.capacity(); i++){
@@ -119,8 +119,15 @@ public class OpenCLHelper {
         return builder.toString();
     }
 
+    public static Object queryDeviceInfo(long device, int info) {
+        return switch (info) {
+            case CL22.CL_DEVICE_BUILT_IN_KERNELS -> null;
+            default -> throw new RuntimeException("Unsupported type");
+        };
+    }
+
     public static long queryDeviceInfoNum(long device, int info) {
-        ByteBuffer value = queryDeviceInfo(device, info);
+        ByteBuffer value = queryDeviceInfoRaw(device, info);
 
         return switch (value.limit()) {
             case 1 -> value.get();
@@ -133,7 +140,7 @@ public class OpenCLHelper {
         };
     }
 
-    public static ByteBuffer queryDeviceInfo(long device, int info) {
+    public static ByteBuffer queryDeviceInfoRaw(long device, int info) {
         int error;
         PointerBuffer length = PointerBuffer.allocateDirect(1);
         error = CL22.clGetDeviceInfo(device, info, (long[])null, length);

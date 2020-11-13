@@ -163,15 +163,7 @@ public abstract class DataSet {
                 (int) Math.floor(startY * levelCalculateLogicLevelHeight(depth))};
     }
 
-    private ArrayList<int[]> allClus = new ArrayList<>();
-
     public Cluster createCluster(int depth, int id) {
-        for(int[] i: allClus) {
-            if(i[0] == depth && i[1] == id)
-                assert false: depth + ", " + id;
-        }
-
-        allClus.add(new int[]{depth, id});
         return new Cluster(null, id, depth, levelGetIterationsForDepth(depth));
     }
 
@@ -265,7 +257,7 @@ public abstract class DataSet {
         }
 
         return new CalculableArea
-                (r.getDepth(), levelGetPrecisionAtDepth(r.getDepth()), list);
+                (r, levelGetPrecisionAtDepth(r.getDepth()), list);
     }
 
     public int levelCalculateLevelWithMinPrecision(double precision) {
@@ -280,6 +272,7 @@ public abstract class DataSet {
 
     public void addClusters(ArrayList<Cluster> clusters) {
         for(Cluster c: clusters) {
+            assert c.getDevice() != null || c.getValue() != null;
             getLevels().get(c.getDepth()).add(c);
         }
     }

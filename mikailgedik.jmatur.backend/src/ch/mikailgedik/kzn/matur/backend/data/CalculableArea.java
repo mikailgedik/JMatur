@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class CalculableArea implements Iterable<Cluster> {
-    private final int depth;
+    private final LogicalRegion region;
     private final double precision;
     private final ArrayList<Cluster> clusters;
 
-    public CalculableArea(int depth, double precision, ArrayList<Cluster> clusters) {
-        this.depth = depth;
+    public CalculableArea(LogicalRegion region, double precision, ArrayList<Cluster> clusters) {
+        this.region = region;
         this.precision = precision;
         this.clusters = clusters;
     }
@@ -19,8 +19,12 @@ public class CalculableArea implements Iterable<Cluster> {
         return clusters.iterator();
     }
 
+    public LogicalRegion getRegion() {
+        return region;
+    }
+
     public int getDepth() {
-        return depth;
+        return region.getDepth();
     }
 
     public double getPrecision() {
