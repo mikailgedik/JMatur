@@ -121,23 +121,52 @@ public class OpenCLHelper {
 
     public static Object queryDeviceInfo(long device, int info) {
         return switch (info) {
-            case CL22.CL_DEVICE_BUILT_IN_KERNELS -> null;
-            default -> throw new RuntimeException("Unsupported type");
+            case CL22.CL_DEVICE_BUILT_IN_KERNELS, CL22.CL_DEVICE_NAME -> queryDeviceInfoString(device, info);
+            case CL22.CL_DEVICE_GLOBAL_MEM_CACHE_SIZE -> queryDeviceInfoULong(device, info);
+            case CL22.CL_DEVICE_MAX_COMPUTE_UNITS, CL22.CL_DEVICE_MAX_CLOCK_FREQUENCY -> queryDeviceInfoUInt(device, info);
+            case CL22.CL_DEVICE_TYPE -> queryDeviceType(device);
+            default -> queryDeviceInfoRaw(device, info);
         };
     }
 
-    public static long queryDeviceInfoNum(long device, int info) {
-        ByteBuffer value = queryDeviceInfoRaw(device, info);
+    public static String queryDeviceType(long device) {
+        ArrayList<String> t = new ArrayList<>();
+        long i = queryDeviceInfoRaw(device, CL22.CL_DEVICE_TYPE).get();
+        if((i & CL22.CL_DEVICE_TYPE_CPU) != 0) {
+            t.add("CPU");
+        }
+        if((i & CL22.CL_DEVICE_TYPE_ACCELERATOR) != 0) {
+            t.add("ACCELERATOR");
+        }
+        if((i & CL22.CL_DEVICE_TYPE_CUSTOM) != 0) {
+            t.add("CUSTOM");
+        }
+        if((i & CL22.CL_DEVICE_TYPE_GPU) != 0) {
+            t.add("GPU");
+        }
+        if((i & CL22.CL_DEVICE_TYPE_DEFAULT) != 0) {
+            t.add("DEFAULT");
+        }
 
-        return switch (value.limit()) {
-            case 1 -> value.get();
-            case 2 -> value.asCharBuffer().get();
-            case 4 -> value.asIntBuffer().get();
-            case 8 -> value.asLongBuffer().get();
+        return t.toString();
+    }
 
-            default ->
-                    throw new IllegalStateException("Unexpected value: " + value.limit());
-        };
+    public static String queryDeviceInfoUInt(long device, int info) {
+        return Integer.toUnsignedString(queryDeviceInfoRawReversed(device, info).asIntBuffer().get());
+    }
+
+    public static String queryDeviceInfoULong(long device, int info) {
+        return Long.toUnsignedString(queryDeviceInfoRawReversed(device, info).asLongBuffer().get());
+    }
+
+    public static ByteBuffer queryDeviceInfoRawReversed(long device, int info) {
+        ByteBuffer o = queryDeviceInfoRaw(device, info);
+        ByteBuffer n = ByteBuffer.allocate(o.limit());
+        for(int i = 0; i < o.limit(); i++) {
+            n.put(o.get(o.limit() - i -1));
+        }
+        n.rewind();
+        return n;
     }
 
     public static ByteBuffer queryDeviceInfoRaw(long device, int info) {

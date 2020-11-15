@@ -53,32 +53,36 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
     public boolean accept(Calculable cal, int[] clusterData) {
         synchronized (lock) {
             if(!hasDone[cal.getCalculatorId()]) {
-                Cluster c = clusters.get(cal.getCalculatorId());
-                c.setValue(clusterData);
+                hasDone[cal.getCalculatorId()] = true;
                 acceptInternal(cal.getCalculatorId());
-                return true;
             } else {
+                //Return if not accepted
                 return false;
             }
         }
+        units.forEach(u -> u.abort(cal.getCalculatorId()));
+        Cluster c = clusters.get(cal.getCalculatorId());
+        c.setValue(clusterData);
+        return true;
     }
 
     public boolean accept(Calculable cal, CLDevice device, long address) {
         synchronized (lock) {
             if(!hasDone[cal.getCalculatorId()]) {
-                clusters.get(cal.getCalculatorId()).setDevice(device, address);
+                hasDone[cal.getCalculatorId()] = true;
                 acceptInternal(cal.getCalculatorId());
-                MemMan.moveToRAM(clusters.get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
-                return true;
             } else {
+                //Return if not accepted
                 return false;
             }
         }
+        units.forEach(u -> u.abort(cal.getCalculatorId()));
+        clusters.get(cal.getCalculatorId()).setDevice(device, address);
+        MemMan.moveToRAM(clusters.get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
+        return true;
     }
 
     private void acceptInternal(int id) {
-        hasDone[id] = true;
-        units.forEach(u -> u.abort(id));
         done = true;
         for(boolean b: hasDone) {
             if(!b) {

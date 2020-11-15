@@ -8,6 +8,7 @@ import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opencl.CL22;
+import org.lwjgl.opencl.CLEventCallback;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -27,23 +28,15 @@ public class CalculatorUnitGPU implements CalculatorUnit {
     private final AtomicBoolean abortable;
     private Thread thread;
     private volatile Calculable calculable;
+    private String description;
 
     public CalculatorUnitGPU(long device) {
         this.device = new CLDevice(device);
         abortable = new AtomicBoolean();
-        System.out.println("Device info: ");
-        System.out.println("\tBuilt in kernels  : " +
-                OpenCLHelper.queryDeviceInfoString(device, CL22.CL_DEVICE_BUILT_IN_KERNELS));
-        System.out.println("\tDevice name       : " +
-                OpenCLHelper.queryDeviceInfoString(device, CL22.CL_DEVICE_NAME));
-        System.out.println("\tGlobal memory     : " +
-                OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_GLOBAL_MEM_CACHE_SIZE));
-        System.out.println("\tLocal memory      : " +
-                OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_LOCAL_MEM_SIZE));
-        System.out.println("\tCompute Units     : " +
-                OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_MAX_COMPUTE_UNITS));
-        System.out.println("\tClock             : " +
-                OpenCLHelper.queryDeviceInfoNum(device, CL22.CL_DEVICE_MAX_CLOCK_FREQUENCY));
+
+        description = OpenCLHelper.queryDeviceInfo(getDevice().getDevice(), CL22.CL_DEVICE_TYPE) + ": " +
+                OpenCLHelper.queryDeviceInfo(getDevice().getDevice(), CL22.CL_DEVICE_NAME) + ", " +
+                OpenCLHelper.queryDeviceInfo(getDevice().getDevice(), CL22.CL_DEVICE_MAX_CLOCK_FREQUENCY) + "MHz";
     }
 
     public void init(Init init) {
@@ -53,6 +46,18 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         createProgram();
         buildProgram();
         createKernel();
+
+        System.out.println("Device info: ");
+        System.out.println("\tBuilt in kernels  : " +
+                OpenCLHelper.queryDeviceInfo(device.getDevice(), CL22.CL_DEVICE_BUILT_IN_KERNELS));
+        System.out.println("\tDevice name       : " +
+                OpenCLHelper.queryDeviceInfo(device.getDevice(), CL22.CL_DEVICE_NAME));
+        System.out.println("\tGlobal memory     : " +
+                OpenCLHelper.queryDeviceInfo(device.getDevice(), CL22.CL_DEVICE_GLOBAL_MEM_CACHE_SIZE));
+        System.out.println("\tCompute Units     : " +
+                OpenCLHelper.queryDeviceInfo(device.getDevice(), CL22.CL_DEVICE_MAX_COMPUTE_UNITS));
+        System.out.println("\tClock             : " +
+                OpenCLHelper.queryDeviceInfo(device.getDevice(), CL22.CL_DEVICE_MAX_CLOCK_FREQUENCY));
     }
 
     private void buildProgram() {
@@ -96,9 +101,9 @@ public class CalculatorUnitGPU implements CalculatorUnit {
                 abortable.set(true);
                 allocateMemory(calculable);
                 runKernel();
-                releaseMemory();
 
                 CL22.clFinish(device.getCommandQueue());
+                releaseMemory();
                 abortable.set(false);
                 boolean accepted = calculatorMandelbrot.accept(calculable, device, pData);
                 if(!accepted) {
@@ -133,21 +138,19 @@ public class CalculatorUnitGPU implements CalculatorUnit {
 
     private void runKernel() {
         ByteBuffer global_work_size = BufferUtils.createByteBuffer(Long.BYTES);
-        ByteBuffer local_work_size = BufferUtils.createByteBuffer(Long.BYTES);
 
         global_work_size.asLongBuffer().put(logicClusterHeight * logicClusterWidth);
-        local_work_size.asLongBuffer().put(1);
 
         int error = CL22.clEnqueueNDRangeKernel(device.getCommandQueue(), kernel, 1,
                 null,
                 PointerBuffer.create(global_work_size),
-                PointerBuffer.create(local_work_size),
+                null,
                 null,
                 null);
         OpenCLHelper.check(error);
     }
 
-    private synchronized void releaseMemory() {
+    private void releaseMemory() {
         MemMan.freeMemoryObject(pCoordinates);
         MemMan.freeMemoryObject(pMaxIterations);
         MemMan.freeMemoryObject(pPrecision);
@@ -193,13 +196,16 @@ public class CalculatorUnitGPU implements CalculatorUnit {
         error[0] = CL22.clSetKernelArg1p(kernel, 1, pData);
         assert error[0] == CL22.CL_SUCCESS: error[0];
 
-        error[0] = CL22.clSetKernelArg1p(kernel, 5, pAbort);
-        assert error[0] == CL22.CL_SUCCESS: error[0];
-
         error[0] = CL22.clSetKernelArg1p(kernel, 2, pMaxIterations);
         assert error[0] == CL22.CL_SUCCESS: error[0];
 
         error[0] = CL22.clSetKernelArg1p(kernel, 4, pPrecision);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
+        error[0] = CL22.clSetKernelArg1p(kernel, 5, pAbort);
+        assert error[0] == CL22.CL_SUCCESS: error[0];
+
+        error[0] = CL22.clSetKernelArg(kernel, 6, new int[]{logicClusterWidth * logicClusterHeight});
         assert error[0] == CL22.CL_SUCCESS: error[0];
     }
 
@@ -242,5 +248,11 @@ public class CalculatorUnitGPU implements CalculatorUnit {
 
     public long getCommandQueue() {
         return device.getCommandQueue();
+    }
+
+    @Override
+    public String toString() {
+        return description;
+
     }
 }

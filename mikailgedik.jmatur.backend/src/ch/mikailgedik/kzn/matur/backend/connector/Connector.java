@@ -54,8 +54,8 @@ public class Connector {
 
         clKernelCalculate = FileManager.getFileManager().readFile("/clkernels/mandelbrot.cl");
         clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
-        renderCenter = new double[2];
-        renderHeight = 4;
+        renderCenter = new double[]{0,0};
+        renderHeight = 3.9;
 
         videoCreator = null;
     }
@@ -308,10 +308,14 @@ public class Connector {
         System.out.println("Total " + tot + ", to calculate: " + cl.size());
 
         videoCreator = new Thread(() -> {
+            long t = System.currentTimeMillis();
+            long calcTime;
+
             long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
             calculatorMandelbrot.calculate(cl, dataSet, maxWaitingTime);
 
-            System.out.println("Calculated");
+            calcTime = (System.currentTimeMillis() - t);
+            t = System.currentTimeMillis();
 
             dataSet.addClusters(cl);
 
@@ -371,7 +375,11 @@ public class Connector {
                 process.getOutputStream().close();
                 process.getErrorStream().close();
                 process.getInputStream().close();
-                System.out.println("Rendered");
+
+                long renderTime = (System.currentTimeMillis() - t);
+                System.out.println("Calculation time: " + calcTime);
+                System.out.println("Rendered, time: " + renderTime);
+                System.out.println("Total time: " + (calcTime + renderTime));
             } catch (IOException | InterruptedException e) {
                 //throw new RuntimeException(e);
                 JOptionPane.showMessageDialog(null,

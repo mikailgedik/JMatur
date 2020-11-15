@@ -438,7 +438,7 @@ public class WindowFrontEnd extends JFrame {
             });
 
             this.task = this.executorService.submit(() -> {
-                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY);
+                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
                 try {
                     if(f != null) {
                         canvas.setBusy(true);
@@ -452,6 +452,8 @@ public class WindowFrontEnd extends JFrame {
                             dialog.dispose();
                         }
                         canvas.setBusy(false);
+                    } else {
+                        dialog.dispose();
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
@@ -469,7 +471,7 @@ public class WindowFrontEnd extends JFrame {
             this.task = this.executorService.submit(() -> {
                 //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
                 //https://trac.ffmpeg.org/wiki/Slideshow
-                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY);
+                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
                 if(f == null) {
                     return;
                 }
@@ -543,7 +545,7 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void importAnimationPath(ActionEvent event) {
-        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY);
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, false);
         if(file != null) {
             try {
                 FileInputStream in = new FileInputStream(file);
@@ -556,7 +558,7 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void exportAnimationPath(ActionEvent event) {
-        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY);
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, true);
         if(file != null) {
             try {
                 FileOutputStream out = new FileOutputStream(file);
@@ -748,25 +750,31 @@ public class WindowFrontEnd extends JFrame {
     }
 
     private void fileOpen(ActionEvent actionEvent) {
-        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY);
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, false);
         if(f != null) {
             connector.readData(f);
         }
     }
 
     private void fileSave(ActionEvent actionEvent) {
-        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY);
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, true);
         if(f != null) {
             connector.saveData(f);
         }
     }
 
-    private File showFileDialog(String title, int mode) {
+    private File showFileDialog(String title, int mode, boolean saveDialog) {
         JFileChooser dialog = new JFileChooser();
         dialog.setDialogTitle(title);
         dialog.setFileSelectionMode(mode);
         dialog.setMultiSelectionEnabled(false);
-        if(dialog.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+        int r;
+        if(saveDialog) {
+            r = dialog.showSaveDialog(this);
+        } else {
+            r = dialog.showOpenDialog(this);
+        }
+        if(r == JFileChooser.APPROVE_OPTION) {
             return dialog.getSelectedFile();
         } else {
             return null;

@@ -27,7 +27,7 @@ public class ImageResultGPU extends ImageResult {
     public void create(long maxWaitingTime) {
         createScreen();
 
-        pImage = MemMan.allocateAsWriteMemory(device, getScreen().getPixels().length * Integer.SIZE);
+        pImage = MemMan.allocateAsWriteMemory(device, getScreen().getPixels());
         this.pLogClusW = MemMan.allocateAsReadMemory(device, new int[]{getDataSet().getLogicClusterWidth()});
         this.pLogImgW = MemMan.allocateAsReadMemory(device, new int[]{getScreen().getWidth()});
         this.pMaxIter = MemMan.allocateAsReadMemory(device, new int[]{getMaxIterations()});
@@ -45,6 +45,9 @@ public class ImageResultGPU extends ImageResult {
 
             error[0] = CL22.clSetKernelArg1p(kernel, 5, pMaxIter);
             assert error[0] == CL22.CL_SUCCESS: error[0];
+
+            error[0] = CL22.clSetKernelArg(kernel, 6, new int[]{getScreen().getPixels().length});
+            assert error[0] == CL22.CL_SUCCESS: error[0];
         }
 
         getDataSet().iterateOverLogicalRegion(getLogicalRegion(), this);
@@ -59,15 +62,13 @@ public class ImageResultGPU extends ImageResult {
 
     private void runKernel() {
         ByteBuffer global_work_size = BufferUtils.createByteBuffer(Long.BYTES);
-        ByteBuffer local_work_size = BufferUtils.createByteBuffer(Long.BYTES);
 
         global_work_size.asLongBuffer().put(getDataSet().getLogicClusterWidth() * getDataSet().getLogicClusterHeight());
-        local_work_size.asLongBuffer().put(1);
 
         int error = CL22.clEnqueueNDRangeKernel(device.getCommandQueue(), kernel, 1,
                 null,
                 PointerBuffer.create(global_work_size),
-                PointerBuffer.create(local_work_size),
+                null,
                 null,
                 null);
         OpenCLHelper.check(error);

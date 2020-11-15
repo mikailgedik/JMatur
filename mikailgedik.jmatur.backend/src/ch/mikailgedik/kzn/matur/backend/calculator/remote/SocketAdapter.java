@@ -284,4 +284,8 @@ public class SocketAdapter {
         return new Signal.SignalConfigure(
                 new CalculatorUnit.CalculatorConfiguration(cW, cH, null));
     }
+
+    public String getHostName() {
+        return socket.getInetAddress().getHostName();
+    }
 }

@@ -10,7 +10,7 @@ string.file.defaultOutputFile=
 #0 if no external calculators are allowed, 1 otherwise
 int.setting.connection.acceptsExternal=0
 #Host to connect to as slave
-string.setting.connection.host=127.0.0.1
+string.setting.connection.host=
 #Port to use
 int.setting.connection.port=5000
 #------------------------------------------------------------------
@@ -24,15 +24,15 @@ int.setting.render.framesPerSecond=25
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=100
+int.setting.calculation.startIterations=25000
 string.setting.calculation.iterationModel=static
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000
 #------------------------------------------------------------------
 ###DATA SETTINGS
-int.setting.data.logicClusterWidth=128
-int.setting.data.logicClusterHeight=128
+int.setting.data.logicClusterWidth=512
+int.setting.data.logicClusterHeight=512
 int.setting.data.startLogicLevelWidth=1
 int.setting.data.startLogicLevelHeight=1
 int.setting.data.clusterFactor=4

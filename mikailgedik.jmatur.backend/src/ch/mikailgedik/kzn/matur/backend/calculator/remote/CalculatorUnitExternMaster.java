@@ -32,9 +32,8 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
                     if(o instanceof Signal.SignalGet) {
                         sendNext(((Signal.SignalGet) o).amount);
                     } else if (o instanceof Signal.SignalResult) {
-                        boolean accepted = configuration.getCalculatorMandelbrot().accept(((Signal.SignalResult) o).result,
+                        configuration.getCalculatorMandelbrot().accept(((Signal.SignalResult) o).result,
                                 ((Signal.SignalResult) o).result.getData());
-                        System.out.println("Received result " + accepted);
                     } else if (o instanceof Signal.SignalDone) {
                         shouldRun = false;
                     } else {
@@ -69,5 +68,10 @@ public class CalculatorUnitExternMaster implements CalculatorUnit {
     @Override
     public void abort(int calcId) {
         socket.sendSignalAbort(calcId);
+    }
+
+    @Override
+    public String toString() {
+        return "Remote at: " + socket.getHostName();
     }
 }

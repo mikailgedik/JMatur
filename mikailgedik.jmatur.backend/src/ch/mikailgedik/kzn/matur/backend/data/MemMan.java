@@ -4,6 +4,7 @@ import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opencl.CL22;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 /**Short for MemoryManager*/
@@ -102,6 +103,13 @@ public class MemMan {
             assert false: "Memory allocation failure";
         }
         check(errorBuffer);
+        return result;
+    }
+
+    public static long allocateAsWriteMemory(CLDevice device, int[] value) {
+        long result = allocateAsWriteMemory(device, value.length * Integer.BYTES);
+        int err = CL22.clEnqueueWriteBuffer(device.getCommandQueue(), result, true, 0, value, null, null);
+        check(err);
         return result;
     }
 

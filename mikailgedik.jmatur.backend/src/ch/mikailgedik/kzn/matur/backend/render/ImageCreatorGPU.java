@@ -10,7 +10,7 @@ import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import java.util.ArrayList;
 
 public class ImageCreatorGPU extends ImageCreator{
-    private static final String KERNEL_NAME = "color";
+    private static final String KERNEL_NAME = "colorKernel";
     private final DataSet dataSet;
     private ImageResultGPU imageResult;
     private final ArrayList<ImageResultGPU> buffer;
