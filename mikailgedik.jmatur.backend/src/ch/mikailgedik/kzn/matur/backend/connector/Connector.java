@@ -82,7 +82,7 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_REGION_START_Y),
                 settingsManager.getI(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
-                DataSet.getIterationModelFrom("antiProportional"));
+                DataSet.getIterationModelFrom("static"));
 
         aspectRatio = settingsManager.getD(Constants.RENDER_ASPECT_RATIO);
 
