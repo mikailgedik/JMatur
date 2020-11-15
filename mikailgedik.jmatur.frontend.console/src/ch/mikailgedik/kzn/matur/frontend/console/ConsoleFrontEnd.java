@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+@Deprecated
 public class ConsoleFrontEnd {
     private Connector connector;
     private DecimalFormat format;
@@ -21,7 +22,7 @@ public class ConsoleFrontEnd {
         Scanner scanner = new Scanner(System.in);
         String line;
         System.out.println("Java version: " + System.getProperty("java.version"));
-        System.out.println("Program version: " + connector.getSetting(Constants.VALUE_PROGRAM_VERSION));
+        //System.out.println("Program version: " + connector.getSetting(Constants.VALUE_PROGRAM_VERSION));
         System.out.println("Input commands");
         ArrayList<String> commands = new ArrayList<>();
 
@@ -46,7 +47,7 @@ public class ConsoleFrontEnd {
         } else {
             para = null;
         }
-
+        /*
         switch (command) {
             case "calculate" -> connector.calculate();
             case "render" -> connector.createImage();
@@ -92,6 +93,7 @@ public class ConsoleFrontEnd {
             }
             default -> throw new RuntimeException("Unknown command: " + command);
         }
+         */
 
         System.out.println("Time: " + format.format((System.currentTimeMillis()-t)) + " ms");
     }

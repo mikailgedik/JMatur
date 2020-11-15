@@ -4,7 +4,6 @@ import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opencl.CL22;
 
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 /**Short for MemoryManager*/

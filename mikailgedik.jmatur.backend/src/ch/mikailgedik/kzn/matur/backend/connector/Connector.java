@@ -1,6 +1,5 @@
 package ch.mikailgedik.kzn.matur.backend.connector;
 
-import ch.mikailgedik.kzn.matur.backend.calculator.Calculable;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorMandelbrotArea;
 import ch.mikailgedik.kzn.matur.backend.calculator.CalculatorUnitGPU;
 import ch.mikailgedik.kzn.matur.backend.calculator.remote.CalculatorMandelbrotExternSlave;
@@ -52,8 +51,8 @@ public class Connector {
 
         units = new ArrayList<>();
 
-        clKernelCalculate = FileManager.getFileManager().readFile("/clkernels/mandelbrot.cl");
-        clKernelRender =  FileManager.getFileManager().readFile("/clkernels/colorFunctionLog.cl");
+        clKernelCalculate = FileManager.FILE_MANAGER.readFile("/clkernels/mandelbrot.cl");
+        clKernelRender =  FileManager.FILE_MANAGER.readFile("/clkernels/colorFunctionLog.cl");
         renderCenter = new double[]{0,0};
         renderHeight = 3.9;
 
@@ -83,7 +82,7 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_REGION_START_Y),
                 settingsManager.getI(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
-                DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
+                DataSet.getIterationModelFrom("antiProportional"));
 
         aspectRatio = settingsManager.getD(Constants.RENDER_ASPECT_RATIO);
 
@@ -210,7 +209,7 @@ public class Connector {
     public void saveImage(String path) {
         assert image != null;
         assert path != null;
-        FileManager.getFileManager().saveImage(path, image);
+        FileManager.FILE_MANAGER.saveImage(path, image);
     }
 
     public TreeMap<String, Object> getAllSettings() {

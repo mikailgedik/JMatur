@@ -21,7 +21,7 @@ public class OpenCLHelper {
     }
 
     public static long createProgramFromFile(long context, String kernelFile) {
-        return createProgramFromString(context, FileManager.getFileManager().readFile(kernelFile));
+        return createProgramFromString(context, FileManager.FILE_MANAGER.readFile(kernelFile));
     }
 
     public static void buildProgram(long device, long program) {

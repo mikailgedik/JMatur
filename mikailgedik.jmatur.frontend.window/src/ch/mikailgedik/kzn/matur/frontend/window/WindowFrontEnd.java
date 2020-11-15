@@ -7,6 +7,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.VideoPath;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -24,9 +25,6 @@ public class WindowFrontEnd extends JFrame {
     private JButton exit;
 
     private JPanel masterContainer;
-    private JTextArea textPanel;
-    private JScrollPane scrollPane;
-    private JSplitPane splitPane;
     private JMenuBar menuBar;
     private JMenuItem[] animationItems;
     private JPanel loginContainer;
@@ -74,7 +72,7 @@ public class WindowFrontEnd extends JFrame {
         createLayout();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(new Dimension(400,300));
+        setSize(new Dimension(160 * 10 / 2,90 * 10 / 2));
         setLocationRelativeTo(null);
 
         setVisible(true);
@@ -131,13 +129,11 @@ public class WindowFrontEnd extends JFrame {
                     }
                 } else {
                     connector.initMaster(-1);
-                    splitPane.add(scrollPane);
                     setJMenuBar(menuBar);
                     canvas.setBusy(true);
                     setContentPane(masterContainer);
                 }
                 this.validate();
-                splitPane.setDividerLocation(0.8);
             });
 
             editKernelRender.addActionListener((event) -> connector.setClKernelRender(showStringEditDialog(connector.getClKernelRender())));
@@ -147,17 +143,6 @@ public class WindowFrontEnd extends JFrame {
         {
             masterContainer = new JPanel();
             canvas = new FractalCanvas();
-
-            textPanel = new JTextArea();
-            textPanel.setText("OUTPUT\n");
-            textPanel.setForeground(Color.WHITE);
-            textPanel.setBackground(Color.BLACK);
-            textPanel.setEditable(false);
-            scrollPane = new JScrollPane(textPanel);
-
-            splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-            splitPane.add(canvas);
-            splitPane.add(scrollPane);
 
             MouseAdapter adapter = new MouseAdapter() {
                 @Override
@@ -246,6 +231,9 @@ public class WindowFrontEnd extends JFrame {
         {
             slaveContainer = new JPanel();
             exit = new JButton("Exit");
+            exit.addActionListener((e) -> {
+                System.exit(0);
+            });
         }
 
         createMenu();
@@ -290,13 +278,21 @@ public class WindowFrontEnd extends JFrame {
             open.addActionListener(this::fileOpen);
             menuFile.add(open);
 
-            JMenuItem close = new JMenuItem("Close");
-            close.addActionListener(this::fileClose);
-            menuFile.add(close);
-
             JMenuItem save = new JMenuItem("Save");
             save.addActionListener(this::fileSave);
             menuFile.add(save);
+
+            menuFile.addSeparator();
+            JMenuItem about = new JMenuItem("About");
+            about.addActionListener(this::showAbout);
+            menuFile.add(about);
+
+            menuFile.addSeparator();
+
+            JMenuItem close = new JMenuItem("Exit");
+            close.addActionListener(this::exitApplication);
+            menuFile.add(close);
+
             menuBar.add(menuFile);
         }
         {
@@ -351,6 +347,20 @@ public class WindowFrontEnd extends JFrame {
             animationItems[2].setEnabled(true);
             menuBar.add(menuAnimation);
         }
+    }
+
+    private void showAbout(ActionEvent event) {
+        JDialog dialog = new JDialog(this, true);
+        JTextPane textPane = new JTextPane();
+        textPane.setText("About: This software calculates and renders fractals using OpenCL and Java\n" +
+                "Author: Mikail Gedik, November 2020");
+        dialog.add(textPane);
+
+        dialog.setLayout(new GridLayout(1,1));
+
+        dialog.setSize(new Dimension(400, 300));
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     private void setVideoPath(VideoPath p) {
@@ -644,12 +654,9 @@ public class WindowFrontEnd extends JFrame {
         TreeMap<String, Object[]> tree = new TreeMap<>();
 
         for(Map.Entry<String, Object> entry: map.entrySet()) {
-            JTextField key = new JTextField(entry.getKey());
+            JTextField key = new JTextField(Constants.getDescription(entry.getKey()));
             key.setEditable(false);
             JTextField value = new JTextField(entry.getValue().toString());
-            if(entry.getKey().startsWith("value")) {
-                value.setEditable(false);
-            }
             tree.put(entry.getKey(), new Object[]{value, entry.getValue()});
             hor.addGroup(layout.createSequentialGroup().addComponent(key).addComponent(value));
             ver.addGroup(layout.createParallelGroup().addComponent(key).addComponent(value));
@@ -667,7 +674,7 @@ public class WindowFrontEnd extends JFrame {
             tree.forEach((k, v) -> {
                 String newString = ((JTextField)v[0]).getText();
                 if(!v[1].toString().equals(newString)) {
-                    log("New setting for " + k);
+                    System.out.println(("New setting for " + k));
 
                     Object newObj = switch (k.substring(0, k.indexOf('.'))) {
                         case "int" -> Integer.valueOf(newString);
@@ -744,9 +751,8 @@ public class WindowFrontEnd extends JFrame {
         }
     }
 
-    private void fileClose(ActionEvent actionEvent) {
+    private void exitApplication(ActionEvent actionEvent) {
         System.exit(0);
-        assert false;
     }
 
     private void fileOpen(ActionEvent actionEvent) {
@@ -781,17 +787,13 @@ public class WindowFrontEnd extends JFrame {
         }
     }
 
-    public void log(String message) {
-        textPanel.append(message + "\n");
-    }
-
     private void createLayout() {
         {
             //https://docs.oracle.com/javase/tutorial/uiswing/layout/group.html
             BorderLayout layout = new BorderLayout();
 
-            layout.addLayoutComponent(splitPane, BorderLayout.CENTER);
-            masterContainer.add(splitPane);
+            layout.addLayoutComponent(canvas, BorderLayout.CENTER);
+            masterContainer.add(canvas);
             masterContainer.setLayout(layout);
         }
 
@@ -807,10 +809,12 @@ public class WindowFrontEnd extends JFrame {
             this.setContentPane(loginContainer);
         }
         {
-            BorderLayout layout = new BorderLayout();
-
-            layout.addLayoutComponent(scrollPane, BorderLayout.CENTER);
-            slaveContainer.add(scrollPane);
+            GridLayout layout = new GridLayout(2,1);
+            JTextArea text = new JTextArea();
+            text.setText("Thanks for sharing");
+            text.setEditable(false);
+            slaveContainer.add(text);
+            slaveContainer.add(exit);
             slaveContainer.setLayout(layout);
         }
     }

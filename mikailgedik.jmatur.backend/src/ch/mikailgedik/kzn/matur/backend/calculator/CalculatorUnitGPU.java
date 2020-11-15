@@ -2,13 +2,11 @@ package ch.mikailgedik.kzn.matur.backend.calculator;
 
 import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
-import ch.mikailgedik.kzn.matur.backend.filemanager.FileManager;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opencl.CL22;
-import org.lwjgl.opencl.CLEventCallback;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

@@ -3,7 +3,6 @@ package ch.mikailgedik.kzn.matur.backend.filemanager;
 import ch.mikailgedik.kzn.matur.backend.connector.Screen;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 
 public class FileManager {
@@ -45,11 +44,5 @@ public class FileManager {
         }
 
         return builder.toString();
-    }
-
-
-
-    public static FileManager getFileManager() {
-        return FILE_MANAGER;
     }
 }

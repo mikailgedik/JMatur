@@ -2,9 +2,6 @@ package ch.mikailgedik.kzn.matur.backend.data;
 
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 public class Cluster {
     private int[] value;
     private final int id, depth, iterations;

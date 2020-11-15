@@ -29,13 +29,13 @@ public class SettingsManager implements Constants {
     private void readFromStream() {
         BufferedReader reader = null;
         Pattern nameValidator = Pattern.compile("[^a-zA-Z.]");
-        InputStream inputStream = FileManager.getFileManager().getResourceAsStream(FileManager.DEFAULT_SETTINGS);
+        InputStream inputStream = FileManager.FILE_MANAGER.getResourceAsStream(FileManager.DEFAULT_SETTINGS);
         if(inputStream == null) {
             throw new RuntimeException("Cannot get resource \"" + FileManager.DEFAULT_SETTINGS + "\": Resource not found");
         }
         
         try {
-            reader = new BufferedReader(new InputStreamReader(FileManager.getFileManager().getResourceAsStream("/settings/defaultsettings")));
+            reader = new BufferedReader(new InputStreamReader(FileManager.FILE_MANAGER.getResourceAsStream("/settings/defaultsettings")));
             String line, name, stringVal;
             Object value;
             int lineNum = 0;

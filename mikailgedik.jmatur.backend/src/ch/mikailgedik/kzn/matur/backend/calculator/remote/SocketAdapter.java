@@ -6,7 +6,6 @@ import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import java.io.*;
 import java.net.Socket;
 import java.util.LinkedList;
-import java.util.TimerTask;
 
 public class SocketAdapter {
     private static final int RESULT = 0x0;

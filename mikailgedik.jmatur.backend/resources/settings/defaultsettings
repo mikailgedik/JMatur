@@ -1,10 +1,3 @@
-###CONSTANT VALUES
-#These value are not meant to change during computation (e. g. things like software version)
-string.value.version=Java 0.0.3
-#------------------------------------------------------------------
-###FILE SETTINGS
-#default file when exporting image
-string.file.defaultOutputFile=
 #------------------------------------------------------------------
 ###CONNECTION SETTINGS
 #0 if no external calculators are allowed, 1 otherwise
@@ -27,8 +20,7 @@ int.setting.render.framesPerSecond=25
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=200
-string.setting.calculation.iterationModel=static
+int.setting.calculation.startIterations=10000
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)
 int.setting.calculation.maxWaitingTimeForThread=1000000000

@@ -369,11 +369,13 @@ public abstract class DataSet {
 
     public static IterationModel getIterationModelFrom(String name) {
         return switch (name) {
-            case "static" -> (s,d,p, sp) -> s;
-            case "antiProportional" -> (s,d,p,sp) -> {
+            case "static" -> (s, d, p, sp) -> s;
+            case "antiProportional" -> (startIterations, depth, precision, startPrecision) -> {
                 //TODO add setting and improve selection
-                int factor = 2;
-                return (int)(s * (sp / p));
+                double factor = 2;
+                double log = Math.log(precision) / Math.log(startPrecision);
+                System.out.println((int) (startIterations * factor * log));
+                return (int) (startIterations * factor * log);
             };
             default -> throw new IllegalStateException("Unexpected value: " + name);
         };
