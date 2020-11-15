@@ -5,7 +5,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 
 import java.io.Serializable;
 
-public interface Signal extends Serializable{
+public interface Signal extends Serializable {
     //Signals sent by slave
     class SignalResult implements Signal {
         public final Calculable.CalculableResult result;

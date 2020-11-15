@@ -8,6 +8,8 @@ public interface Constants {
     String CONNECTION_ACCEPTS_EXTERNAL = "int.setting.connection.acceptsExternal";
     String CONNECTION_HOST = "string.setting.connection.host";
     String CONNECTION_PORT = "int.setting.connection.port";
+    String CONNECTION_BUFFER_LOWER_THRESHOLD = "int.setting.connection.bufferLowerThreshold";
+    String CONNECTION_BUFFER_UPPER_THRESHOLD = "int.setting.connection.bufferUpperThreshold";
 
     String RENDER_ASPECT_RATIO = "double.setting.render.aspectRatio";
     String RENDER_ZOOM_FACTOR = "double.setting.render.zoomFactor";

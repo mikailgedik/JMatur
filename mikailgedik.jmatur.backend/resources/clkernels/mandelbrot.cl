@@ -1,8 +1,11 @@
-int calc(double c, double d, int maxIter, __global int* abort) {
+//This function calculates how many iterations it takes for the value specified by x and y to diverge from the mandelbrot
+//Feel free to make changes to this function to make your own fractal
+//As soon as the abort parameter is set to 1, the program should to stop
+int calc(double x, double y, int maxIter, __global int* abort) {
     double a = 0, b = 0, ta, tb;
     for(int i = 0; i < maxIter; i++) {
-        ta = a*a - b*b + c;
-        tb = 2 * a * b + d;
+        ta = a*a - b*b + x;
+        tb = 2 * a * b + y;
         a = ta;
         b = tb;
         if(a * a + b * b > 4 || *abort) {
@@ -12,6 +15,7 @@ int calc(double c, double d, int maxIter, __global int* abort) {
     return -1;
 }
 
+//The kernel called by the program; this section does not have to be modified
 __kernel void fractal(__global const double *coordi, __global int *res,
                 __global int *it, __global int* cD, __global double *precision, __global int* abort, const int maxGlobal) {
 

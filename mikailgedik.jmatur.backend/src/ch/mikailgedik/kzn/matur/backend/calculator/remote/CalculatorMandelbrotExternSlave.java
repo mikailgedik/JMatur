@@ -5,7 +5,6 @@ import ch.mikailgedik.kzn.matur.backend.connector.CalculatorUnit;
 import ch.mikailgedik.kzn.matur.backend.data.Cluster;
 import ch.mikailgedik.kzn.matur.backend.data.MemMan;
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
-import ch.mikailgedik.kzn.matur.backend.opencl.OpenCLHelper;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -15,21 +14,25 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
-    private static final int BUFFER_LOWER_THRESHOLD = 30, BUFFER_UPPER_THRESHOLD = 50;
-
     private final SocketAdapter socket;
-    private ArrayList<CalculatorUnit> units;
+    private final ArrayList<CalculatorUnit> units;
     private final LinkedList<Calculable> calculables;
     private CalculatorUnit.CalculatorConfiguration configuration;
-    private Thread socketReader, terminationAwaiting;
+    private final Thread socketReader;
+    private final int bufferLowerThreshold, bufferUpperThreshold;
+    private final long maxWaitingTime;
+    private final AtomicInteger pendingRequests;
 
-    private AtomicInteger pendingRequests;
-
-    public CalculatorMandelbrotExternSlave(String host, int port, ArrayList<CalculatorUnit> units) throws IOException {
+    public CalculatorMandelbrotExternSlave(String host, int port,
+                                           int bufferLowerThreshold, int bufferUpperThreshold,
+                                           long maxWaitingTime, ArrayList<CalculatorUnit> units) throws IOException {
         socket = new SocketAdapter(new Socket(host, port));
         this.units = units;
         calculables = new LinkedList<>();
         pendingRequests = new AtomicInteger();
+        this.bufferLowerThreshold = bufferLowerThreshold;
+        this.bufferUpperThreshold = bufferUpperThreshold;
+        this.maxWaitingTime = maxWaitingTime;
 
         socketReader = new Thread(() -> {
             try {
@@ -68,11 +71,10 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
 
         units.forEach(u -> u.configureAndStart(configuration));
 
-        this.terminationAwaiting = new Thread(() -> {
+        Thread terminationAwaiting = new Thread(() -> {
             try {
-                for(CalculatorUnit unit: units) {
-                    //TODO
-                    unit.awaitTerminationAndCleanup(100000);
+                for (CalculatorUnit unit : units) {
+                    unit.awaitTerminationAndCleanup(maxWaitingTime);
                     System.out.println("Done");
                 }
                 socket.sendDone();
@@ -82,7 +84,7 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
             }
 
         });
-        this.terminationAwaiting.start();
+        terminationAwaiting.start();
     }
 
     private void sigCalculable(Signal.SignalCalculable signalCalculable) {
@@ -106,7 +108,8 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
         //Create dummy cluster
         Cluster c = new Cluster(null, 0, 0,0);
         c.setDevice(device, address);
-        MemMan.copyToRAM(c, configuration.getLogicClusterHeight() * configuration.getLogicClusterWidth());
+        MemMan.copyToRAM(c,
+                configuration.getLogicClusterHeight() * configuration.getLogicClusterWidth());
         socket.sendResult(cal, c.getValue());
         return false;//Delete local copy
     }
@@ -114,22 +117,23 @@ public class CalculatorMandelbrotExternSlave implements CalculatorMandelbrot {
     @Override
     public synchronized Calculable get() {
         synchronized (calculables) {
-            if(calculables.size() < BUFFER_LOWER_THRESHOLD) {
+            if(calculables.size() < bufferLowerThreshold) {
                 try {
-                    //Refill buffer TODO
-                    int req = BUFFER_UPPER_THRESHOLD - calculables.size();
+                    int req = bufferUpperThreshold - calculables.size();
                     req -= pendingRequests.get();
 
                     if(req > 0) {
                         socket.requestNext(req);
                         pendingRequests.addAndGet(req);
                     }
+                    //TODO buffer waits although there are still elements in the buffer
+                    //Not waiting causes the server to miscalculate
                     calculables.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-
+            System.out.println("Buffer health: " + calculables.size());
             return calculables.removeFirst();
         }
     }

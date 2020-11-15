@@ -63,7 +63,12 @@ public class Connector {
     public void initSlave() throws IOException {
         isSlave = true;
         calculatorMandelbrotExternSlave = new CalculatorMandelbrotExternSlave(
-                settingsManager.getS(Constants.CONNECTION_HOST), settingsManager.getI(Constants.CONNECTION_PORT), units);
+                settingsManager.getS(Constants.CONNECTION_HOST), settingsManager.getI(Constants.CONNECTION_PORT),
+                settingsManager.getI(Constants.CONNECTION_BUFFER_LOWER_THRESHOLD),
+                settingsManager.getI(Constants.CONNECTION_BUFFER_UPPER_THRESHOLD),
+                settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS),
+                units
+        );
     }
 
     public void initMaster(int renderDevice) {

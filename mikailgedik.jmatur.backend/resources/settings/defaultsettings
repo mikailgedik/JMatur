@@ -13,6 +13,9 @@ int.setting.connection.acceptsExternal=0
 string.setting.connection.host=
 #Port to use
 int.setting.connection.port=5000
+#Buffer threshold
+int.setting.connection.bufferLowerThreshold=30
+int.setting.connection.bufferUpperThreshold=50
 #------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range
@@ -24,7 +27,7 @@ int.setting.render.framesPerSecond=25
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=25000
+int.setting.calculation.startIterations=200
 string.setting.calculation.iterationModel=static
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)

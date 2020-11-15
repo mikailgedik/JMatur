@@ -10,7 +10,7 @@ public interface CalculatorUnit {
     void awaitTerminationAndCleanup(long maxWaitingTime) throws InterruptedException;
     void abort(int calcId);
 
-    class Init {
+    class Init implements Serializable {
         private final String clKernelSource;
 
         public Init(String clKernelSource) {
