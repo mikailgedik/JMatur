@@ -141,7 +141,6 @@ public abstract class DataSet {
 
     /** ensures the all levels with the depth up to and including the parameter exist*/
     public void ensureLevelWithDepth(int depth) {
-        //TODO check if this method is called too often
         assert depth > -1;
         Level prev = levels.get(levels.size() - 1);
         for(int i = levels.size(); i <= depth; i++) {

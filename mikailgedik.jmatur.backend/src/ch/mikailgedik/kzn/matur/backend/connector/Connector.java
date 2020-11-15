@@ -153,12 +153,6 @@ public class Connector {
         settingsManager.addSetting(name, value);
     }
 
-    @Deprecated
-    public void calculate() {
-        //TODO remove
-        System.out.println("Calculate does nothing");
-    }
-
     public void saveData(File basePath) {
         try {
             dataSet.saveAll(basePath.getAbsolutePath());

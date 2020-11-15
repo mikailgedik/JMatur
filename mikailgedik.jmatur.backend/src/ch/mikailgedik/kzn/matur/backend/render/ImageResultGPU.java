@@ -97,7 +97,7 @@ public class ImageResultGPU extends ImageResult {
 
 
         makeParam(c, new int[]{xOffset, yOffset});
-        runKernel(); //TODO free pDestinationOffset
+        runKernel();
         releaseParam();
     }
 }
