@@ -45,8 +45,24 @@ public class WindowFrontEnd extends JFrame {
         connector = new Connector();
         executorService = Executors.newSingleThreadExecutor();
         //Ensure task != null
-        task = executorService.submit(() -> {});
+        submitTask(() -> {});
         init();
+    }
+
+    private void submitTask(Runnable runnable) {
+        task = executorService.submit(() -> {
+            try {
+                runnable.run();
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "An error occurred:\n" + e,
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (AssertionError e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "An assertion error occurred:\n" + e,
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
 
     private void zoomIntoByFactor(double factor) {
@@ -231,9 +247,7 @@ public class WindowFrontEnd extends JFrame {
         {
             slaveContainer = new JPanel();
             exit = new JButton("Exit");
-            exit.addActionListener((e) -> {
-                System.exit(0);
-            });
+            exit.addActionListener((e) -> System.exit(0));
         }
 
         createMenu();
@@ -255,7 +269,7 @@ public class WindowFrontEnd extends JFrame {
 
     private void refresh() {
         if(task.isDone()) {
-            this.task = executorService.submit(this::refreshWithOutBlock);
+            submitTask(this::refreshWithOutBlock);
         }
     }
 
@@ -447,7 +461,7 @@ public class WindowFrontEnd extends JFrame {
                 }
             });
 
-            this.task = this.executorService.submit(() -> {
+            submitTask(() -> {
                 File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
                 try {
                     if(f != null) {
@@ -478,7 +492,7 @@ public class WindowFrontEnd extends JFrame {
 
     private void renderAndShowAnimation(ActionEvent event) {
         if(task.isDone()) {
-            this.task = this.executorService.submit(() -> {
+            submitTask(() -> {
                 //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
                 //https://trac.ffmpeg.org/wiki/Slideshow
                 File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
