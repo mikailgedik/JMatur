@@ -13,7 +13,7 @@ public interface Constants {
 
     String CALCULATION_START_ITERATION = "int.setting.calculation.startIterations";
     String CALCULATION_MAX_WAITING_TIME_THREADS = "int.setting.calculation.maxWaitingTimeForThread";
-
+    String CALCULATION_ITERATION_MODEL = "string.setting.calculation.iterationModel";
     String DATA_LOGIC_CLUSTER_WIDTH = "int.setting.data.logicClusterWidth";
     String DATA_LOGIC_CLUSTER_HEIGHT = "int.setting.data.logicClusterHeight";
     String DATA_START_LOGIC_LEVEL_WIDTH = "int.setting.data.startLogicLevelWidth";
@@ -43,6 +43,8 @@ public interface Constants {
                 return "Frames per second of exported videos";
             case CALCULATION_START_ITERATION:
                 return "Maximal iterations per point";
+            case CALCULATION_ITERATION_MODEL:
+                return "Iteration model";
             case CALCULATION_MAX_WAITING_TIME_THREADS:
                 return "Maximal waiting time for the calculation";
             case DATA_LOGIC_CLUSTER_WIDTH:

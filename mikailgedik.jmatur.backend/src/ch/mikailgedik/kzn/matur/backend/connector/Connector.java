@@ -82,7 +82,7 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_REGION_START_Y),
                 settingsManager.getI(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
-                DataSet.getIterationModelFrom("static"));
+                DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
 
         aspectRatio = settingsManager.getD(Constants.RENDER_ASPECT_RATIO);
 
@@ -274,7 +274,7 @@ public class Connector {
 
     public void startVideoCreation(VideoPath path, final OutputStream out) {
         //Query items to calculate
-
+        //TODO some calculables are not added to the calculation process and are rendered twice afterwards
         ArrayList<LogicalRegion> regions = new ArrayList<>();
         ArrayList<Cluster> cl = new ArrayList<>();
         frames = 0;
