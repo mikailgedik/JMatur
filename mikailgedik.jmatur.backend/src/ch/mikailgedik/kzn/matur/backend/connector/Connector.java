@@ -282,15 +282,15 @@ public class Connector {
             frames++;
             this.setRenderParameters(p.getCenter(), p.getHeight());
             CalculableArea area = createCurrentArea(getRenderRegion());
-            LogicalRegion r1 = area.getRegion();
-            for(LogicalRegion r2: regions) {
+            LogicalRegion r2 = area.getRegion();
+            for(LogicalRegion r1: regions) {
                 if(r1.getDepth() == r2.getDepth() &&
                         r1.getStartX() <= r2.getStartX() && r1.getStartY() <= r2.getStartY() &&
                 r1.getEndX() >= r2.getEndX() && r1.getEndY() >= r2.getEndY()) {
                     continue loop;
                 }
             }
-            regions.add(r1);
+            regions.add(r2);
             area.getClusters().forEach(nC -> {
                 for(Cluster c: cl) {
                     if(c.getId() == nC.getId() && c.getDepth() == nC.getDepth()) {
@@ -304,7 +304,6 @@ public class Connector {
         int tot = cl.size();
         cl.removeIf(u -> u.getValue() != null || u.getDevice() != null);
         System.out.println("Total " + tot + ", to calculate: " + cl.size());
-
         videoCreator = new Thread(() -> {
             long t = System.currentTimeMillis();
             long calcTime;
