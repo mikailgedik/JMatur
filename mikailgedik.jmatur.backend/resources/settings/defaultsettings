@@ -12,7 +12,7 @@ int.setting.connection.bufferUpperThreshold=50
 #------------------------------------------------------------------
 ###RENDER SETTINGS
 #render range
-double.setting.render.aspectRatio=1.7777
+double.setting.render.aspectRatio=1.77778
 #Default zoom factor
 double.setting.render.zoomFactor=0.1
 #Frames per second when exporting videos

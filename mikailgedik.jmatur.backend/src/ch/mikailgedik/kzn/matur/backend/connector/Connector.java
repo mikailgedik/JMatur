@@ -272,9 +272,13 @@ public class Connector {
         this.clKernelRender = clKernelRender;
     }
 
+    public void setAspectRatio(double aspectRatio) {
+        this.aspectRatio = aspectRatio;
+    }
+
     public void startVideoCreation(VideoPath path, final OutputStream out) {
-        //Query items to calculate
-        //TODO some calculables are not added to the calculation process and are rendered twice afterwards
+        //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
+        //https://trac.ffmpeg.org/wiki/Slideshow
         ArrayList<LogicalRegion> regions = new ArrayList<>();
         ArrayList<Cluster> cl = new ArrayList<>();
         frames = 0;

@@ -5,9 +5,7 @@ import ch.mikailgedik.kzn.matur.backend.connector.Connector;
 import ch.mikailgedik.kzn.matur.backend.connector.Constants;
 import ch.mikailgedik.kzn.matur.backend.connector.VideoPath;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.text.DefaultStyledDocument;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -317,6 +315,10 @@ public class WindowFrontEnd extends JFrame {
             setViewport.addActionListener(this::setViewport);
             menuFractal.add(setViewport);
 
+            JMenuItem exportImage = new JMenuItem("Export image");
+            exportImage.addActionListener(this::exportImage);
+            menuFractal.add(exportImage);
+
             menuBar.add(menuFractal);
         }
         {
@@ -325,7 +327,7 @@ public class WindowFrontEnd extends JFrame {
 
             String[] text = {
                     "Add position to path",
-                    "Render and show animation path (inefficient)",
+                    "Go through path",
                     "Import animation path",
                     "Export animation path",
                     "Destroy video path",
@@ -333,7 +335,7 @@ public class WindowFrontEnd extends JFrame {
             };
             ActionListener[] lis = {
                     this::addAnimationPosition,
-                    this::renderAndShowAnimation,
+                    this::goThroughPath,
                     this::importAnimationPath,
                     this::exportAnimationPath,
                     this::destroyVideoPath,
@@ -361,6 +363,29 @@ public class WindowFrontEnd extends JFrame {
             animationItems[2].setEnabled(true);
             menuBar.add(menuAnimation);
         }
+    }
+
+    private void exportImage(ActionEvent event) {
+        submitTask(() -> {
+            File f = showFileDialog("File to save", JFileChooser.FILES_ONLY, true);
+            if(f != null) {
+                try {
+                    askConnectorParameters(false);
+                    SwingUtilities.invokeLater(() -> canvas.setBusy(true));
+                    connector.createImage();
+                    connector.saveImage(f.getAbsolutePath());
+                    putOldParameters();
+                    connector.createImage();
+                    refreshWithOutBlock();
+                    SwingUtilities.invokeLater(() -> canvas.setBusy(false));
+                } catch (NumberFormatException e1) {
+                    e1.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Could not parse number:\n" + e1,
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                putOldParameters();
+            }
+        });
     }
 
     private void showAbout(ActionEvent event) {
@@ -422,8 +447,86 @@ public class WindowFrontEnd extends JFrame {
         }
     }
 
+    private Object[] oldParameters;
+
+    private void askConnectorParameters(boolean onlyOutPut) {
+        JDialog dialog = new JDialog(this, true);
+        JButton saveAndClose = new JButton("Save parameters");
+
+        double[] c = connector.getRenderCenter().clone();
+        double height = connector.getRenderHeight();
+        int hP = connector.getImagePixelHeight();
+        double aspect = connector.getAspectRatio();
+
+        JTextField[][] textFields;
+
+        if(!onlyOutPut) {
+            dialog.setLayout(new GridLayout(6,1));
+            textFields = new JTextField[][]{
+                    {new JTextField("Center x"), new JTextField(Double.toString(c[0]))},
+                    {new JTextField("Center y"), new JTextField(Double.toString(c[1]))},
+                    {new JTextField("Fractal height"), new JTextField(Double.toString(height))},
+                    {new JTextField("Image height (pixels)"), new JTextField(Integer.toString(hP))},
+                    {new JTextField("Aspect ratio"), new JTextField(Double.toString(aspect))}
+            };
+        } else {
+            dialog.setLayout(new GridLayout(3,1));
+            textFields = new JTextField[][]{
+                    {new JTextField("Image height (pixels)"), new JTextField(Integer.toString(hP))},
+                    {new JTextField("Aspect ratio"), new JTextField(Double.toString(aspect))}
+            };
+        }
+
+        for(JTextField[] t: textFields) {
+            JPanel p = new JPanel();
+            p.setLayout(new GridLayout(2,1));
+            t[0].setEditable(false);
+            p.add(t[0]);
+            p.add(t[1]);
+            dialog.add(p);
+        }
+
+
+        saveAndClose.addActionListener((e) -> {
+            try {
+                this.oldParameters = new Object[]{
+                        c, height, hP, aspect
+                };
+                if(!onlyOutPut) {
+                    connector.setRenderParameters(new double[]{
+                            Double.parseDouble(textFields[0][1].getText()),
+                            Double.parseDouble(textFields[1][1].getText())
+                    }, Double.parseDouble(textFields[2][1].getText()));
+                } else {
+                    connector.setImagePixelHeight(Integer.parseInt(textFields[0][1].getText()));
+                    connector.setAspectRatio(Double.parseDouble(textFields[1][1].getText()));
+                }
+
+                dialog.dispose();
+            } catch (NumberFormatException e1) {
+                e1.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Could not parse number:\n" + e1,
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        dialog.add(saveAndClose);
+        dialog.setSize(new Dimension(400, 300));
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+        System.out.println("Out");
+    }
+
+    private void putOldParameters() {
+        assert oldParameters != null;
+        connector.setRenderParameters((double[]) oldParameters[0], (Double) oldParameters[1]);
+        connector.setImagePixelHeight((Integer) oldParameters[2]);
+        connector.setAspectRatio((Double) oldParameters[3]);
+    }
+
     private void renderAnimation(ActionEvent event) {
         if(task.isDone()) {
+
+
             JDialog dialog = new JDialog(this, true);
             dialog.setLayout(new GridLayout(4,1));
 
@@ -463,22 +566,23 @@ public class WindowFrontEnd extends JFrame {
 
             submitTask(() -> {
                 File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
+                if(f == null) {
+                    return;
+                }
+                askConnectorParameters(true);
                 try {
-                    if(f != null) {
-                        canvas.setBusy(true);
-                        FileOutputStream ooo = new FileOutputStream(f);
-                        connector.startVideoCreation(this.videoPath, ooo);
-                        updater.start();
-                        connector.getVideoCreator().join();
-                        ooo.close();
-                        synchronized (bars) {
-                            bars[0] = null;
-                            dialog.dispose();
-                        }
-                        canvas.setBusy(false);
-                    } else {
+                    canvas.setBusy(true);
+                    FileOutputStream ooo = new FileOutputStream(f);
+                    connector.startVideoCreation(this.videoPath, ooo);
+                    updater.start();
+                    connector.getVideoCreator().join();
+                    ooo.close();
+                    putOldParameters();
+                    synchronized (bars) {
+                        bars[0] = null;
                         dialog.dispose();
                     }
+                    canvas.setBusy(false);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -490,79 +594,12 @@ public class WindowFrontEnd extends JFrame {
         }
     }
 
-    private void renderAndShowAnimation(ActionEvent event) {
+    private void goThroughPath(ActionEvent event) {
         if(task.isDone()) {
             submitTask(() -> {
-                //https://stackoverflow.com/questions/34123272/ffmpeg-transmux-mpegts-to-mp4-gives-error-muxer-does-not-support-non-seekable
-                //https://trac.ffmpeg.org/wiki/Slideshow
-                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
-                if(f == null) {
-                    return;
-                }
-                try {
-                    int frameRate = connector.getSettingI(Constants.RENDER_FRAMES_PER_SECOND);
-                    int h = connector.getImagePixelHeight();
-                    int w = (int)(connector.getAspectRatio() * h + .5);
-                    h += h%2;
-                    w += w%2;
-                    Process process = Runtime.getRuntime()
-                            .exec("ffmpeg -f image2pipe -framerate " + frameRate
-                                            + " -i - -f mp4 -s " + w + "x" + h + " -pix_fmt yuv420p -c:v libx264 -movflags frag_keyframe+empty_moov pipe:1");
-
-                    Thread toFile = new Thread(() -> {
-                        FileOutputStream out = null;
-                        try {
-                            out = new FileOutputStream(f);
-                            process.getInputStream().transferTo(out);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        } finally {
-                            if(out != null) {
-                                try {
-                                    out.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                    });
-                    toFile.start();
-
-                    Thread printErr = new Thread(() -> {
-                        try {
-                            InputStream in = process.getErrorStream();
-                            int i;
-                            while((i = in.read()) != -1) {
-                                System.err.print((char)i);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                    printErr.start();
-                    BufferedOutputStream processOut = new BufferedOutputStream(process.getOutputStream());
-
-                    for(VideoPath.VideoPoint p: videoPath) {
-                        connector.setRenderParameters(p.getCenter(), p.getHeight());
-                        refreshWithOutBlock();
-                        ImageIO.write(connector.getImage().toBufferedImage(), "png", processOut);
-                        processOut.flush();
-                    }
-                    processOut.close();
-                    process.getOutputStream().close();
-
-                    toFile.join();
-                    if(process.waitFor() != 0) {
-                        throw new RuntimeException("FFMPEG finished with exit code " + process.exitValue());
-                    }
-                    process.getOutputStream().close();
-                    process.getErrorStream().close();
-                    process.getInputStream().close();
-                } catch (IOException | InterruptedException e) {
-                    JOptionPane.showMessageDialog(this,
-                            "An error occurred during image creation\n" + e.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                    e.printStackTrace();
+                for(VideoPath.VideoPoint p: videoPath) {
+                    connector.setRenderParameters(p.getCenter(), p.getHeight());
+                    refreshWithOutBlock();
                 }
             });
         }
