@@ -305,6 +305,7 @@ public abstract class DataSet {
         out.close();
 
         for(Cluster c: l.getClusters()) {
+            MemMan.ensureInRAM(c, this.logicClusterWidth * this.logicClusterHeight);
             writeCluster(levelDir, c);
         }
     }

@@ -2,7 +2,9 @@ package ch.mikailgedik.kzn.matur.backend.data;
 
 import ch.mikailgedik.kzn.matur.backend.opencl.CLDevice;
 
-public class Cluster {
+import java.io.Serializable;
+
+public class Cluster implements Serializable {
     private int[] value;
     private final int id, depth, iterations;
     private transient long gpuAddress;

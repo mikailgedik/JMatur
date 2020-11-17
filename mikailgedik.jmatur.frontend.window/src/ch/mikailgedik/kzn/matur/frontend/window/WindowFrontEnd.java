@@ -497,6 +497,8 @@ public class WindowFrontEnd extends JFrame {
                             Double.parseDouble(textFields[0][1].getText()),
                             Double.parseDouble(textFields[1][1].getText())
                     }, Double.parseDouble(textFields[2][1].getText()));
+                    connector.setImagePixelHeight(Integer.parseInt(textFields[3][1].getText()));
+                    connector.setAspectRatio(Double.parseDouble(textFields[4][1].getText()));
                 } else {
                     connector.setImagePixelHeight(Integer.parseInt(textFields[0][1].getText()));
                     connector.setAspectRatio(Double.parseDouble(textFields[1][1].getText()));
