@@ -19,9 +19,9 @@ public interface Constants {
     String DATA_START_LOGIC_LEVEL_WIDTH = "int.setting.data.startLogicLevelWidth";
     String DATA_START_LOGIC_LEVEL_HEIGHT = "int.setting.data.startLogicLevelHeight";
     String DATA_CLUSTER_FACTOR = "int.setting.data.clusterFactor";
-    String DATA_REGION_START_X = "int.setting.data.regionStartX";
-    String DATA_REGION_START_Y = "int.setting.data.regionStartY";
-    String DATA_REGION_WIDTH = "int.setting.data.regionWidth";
+    String DATA_REGION_CENTER_X = "double.setting.data.regionCenterX";
+    String DATA_REGION_CENTER_Y = "double.setting.data.regionCenterY";
+    String DATA_REGION_WIDTH = "double.setting.data.regionWidth";
 
     static String getDescription(String val) {
         switch (val) {
@@ -57,9 +57,9 @@ public interface Constants {
                 return "Level-0 logic height";
             case DATA_CLUSTER_FACTOR:
                 return "Cluster factor";
-            case DATA_REGION_START_X:
+            case DATA_REGION_CENTER_X:
                 return "Region start x";
-            case DATA_REGION_START_Y:
+            case DATA_REGION_CENTER_Y:
                 return "Region start y";
             case DATA_REGION_WIDTH:
                 return "Region width";

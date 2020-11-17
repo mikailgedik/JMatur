@@ -53,9 +53,8 @@ public class Connector {
 
         clKernelCalculate = FileManager.FILE_MANAGER.readFile("/clkernels/mandelbrot.cl");
         clKernelRender =  FileManager.FILE_MANAGER.readFile("/clkernels/colorFunctionLog.cl");
-        renderCenter = new double[]{0,0};
-        renderHeight = 3.9;
 
+        renderCenter = new double[]{0,0};
         videoCreator = null;
     }
 
@@ -78,13 +77,18 @@ public class Connector {
                 settingsManager.getI(Constants.DATA_START_LOGIC_LEVEL_WIDTH),
                 settingsManager.getI(Constants.DATA_START_LOGIC_LEVEL_HEIGHT),
                 settingsManager.getI(Constants.DATA_CLUSTER_FACTOR),
-                settingsManager.getI(Constants.DATA_REGION_START_X),
-                settingsManager.getI(Constants.DATA_REGION_START_Y),
-                settingsManager.getI(Constants.DATA_REGION_WIDTH),
+                settingsManager.getD(Constants.DATA_REGION_CENTER_X),
+                settingsManager.getD(Constants.DATA_REGION_CENTER_Y),
+                settingsManager.getD(Constants.DATA_REGION_WIDTH),
                 settingsManager.getI(Constants.CALCULATION_START_ITERATION),
                 DataSet.getIterationModelFrom(settingsManager.getS(Constants.CALCULATION_ITERATION_MODEL)));
 
         aspectRatio = settingsManager.getD(Constants.RENDER_ASPECT_RATIO);
+
+        renderCenter[0] = dataSet.getRegion().getStartX() + dataSet.getRegion().getWidth() / 2;
+        renderCenter[1] = dataSet.getRegion().getStartY() + dataSet.getRegion().getHeight() / 2;
+        //Multiply by 1.1 to ensure that the first rendered image takes less clusters
+        renderHeight = dataSet.getRegion().getHeight() * 1.1;
 
         calculatorMandelbrot = new CalculatorMandelbrotArea(units, new CalculatorUnit.Init(clKernelCalculate));
         CalculatorUnitGPU unit = null;
@@ -245,7 +249,7 @@ public class Connector {
 
     public void setImagePixelHeight(int h) {
         this.pixelHeight = h;
-        this.pixelWidth = (int)(getAspectRatio() * h + .5);
+        updatePixelWidth();
     }
 
     public int getImagePixelHeight() {
@@ -274,6 +278,11 @@ public class Connector {
 
     public void setAspectRatio(double aspectRatio) {
         this.aspectRatio = aspectRatio;
+        updatePixelWidth();
+    }
+
+    private void updatePixelWidth() {
+        this.pixelWidth = (int)(getAspectRatio() * this.pixelHeight + .5);
     }
 
     public void startVideoCreation(VideoPath path, final OutputStream out) {

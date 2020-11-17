@@ -20,7 +20,7 @@ public abstract class DataSet {
     /** The absolute height is calculated through the logic cluster dimensions and the start values for the logic level dimensions */
 
     public DataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor,
-                   double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
+                   double regionCenterX, double regionCenterY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         this.levels = new ArrayList<>();
         this.logicClusterWidth = logicClusterWidth;
         this.logicClusterHeight = logicClusterHeight;
@@ -44,8 +44,8 @@ public abstract class DataSet {
 
         this.firstLevelPrecision = levels.get(0).getPrecision();
 
-        this.region = new Region(regionStartX, regionStartY,
-                regionStartX + regionWidth, regionStartY + absoluteLevelHeight);
+        this.region = new Region(regionCenterX - regionWidth / 2, regionCenterY - absoluteLevelHeight / 2,
+                regionCenterX + regionWidth / 2, regionCenterY + absoluteLevelHeight / 2);
 
         //Only for testing purposes of the math done
         /*
@@ -355,16 +355,20 @@ public abstract class DataSet {
         return l;
     }
 
+    public Region getRegion() {
+        return region;
+    }
+
     public static DataSet createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
-                                                         int startLogicLevelHeight, int clusterFactor, double regionStartX,
-                                                         double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
+                                        int startLogicLevelHeight, int clusterFactor, double regionStartY,
+                                        double regionCenterY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         return new DataSetMandelbrot(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor,
-                regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
+                regionStartY, regionCenterY, regionWidth, iterationsForFirstLevel, iterationModel);
     }
 
     private static class DataSetMandelbrot extends DataSet {
-        public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionStartX, double regionStartY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
-            super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionStartX, regionStartY, regionWidth, iterationsForFirstLevel, iterationModel);
+        public DataSetMandelbrot(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth, int startLogicLevelHeight, int clusterFactor, double regionCenterX, double regionCenterY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
+            super(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor, regionCenterX, regionCenterY, regionWidth, iterationsForFirstLevel, iterationModel);
         }
     }
 

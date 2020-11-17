@@ -20,7 +20,7 @@ int.setting.render.framesPerSecond=25
 #------------------------------------------------------------------
 ###CALCUTION SETTINGS
 #Max iterations per render point for the first level
-int.setting.calculation.startIterations=5000
+int.setting.calculation.startIterations=50000
 string.setting.calculation.iterationModel=static
 #First default init cluster depth
 #Max time given to thread pool to wait for threads to terminate (in milliseconds)
@@ -32,7 +32,7 @@ int.setting.data.logicClusterHeight=512
 int.setting.data.startLogicLevelWidth=1
 int.setting.data.startLogicLevelHeight=1
 int.setting.data.clusterFactor=4
-int.setting.data.regionStartX=-2
-int.setting.data.regionStartY=-2
-int.setting.data.regionWidth=4
+double.setting.data.regionCenterX=-0.0
+double.setting.data.regionCenterY=0.0
+double.setting.data.regionWidth=4
 #------------------------------------------------------------------
