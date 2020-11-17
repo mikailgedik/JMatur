@@ -78,7 +78,6 @@ public class CalculatorMandelbrotArea implements CalculatorMandelbrot {
         }
         units.forEach(u -> u.abort(cal.getCalculatorId()));
         clusters.get(cal.getCalculatorId()).setDevice(device, address);
-        MemMan.moveToRAM(clusters.get(cal.getCalculatorId()), currentDataSet.getLogicClusterHeight() * currentDataSet.getLogicClusterWidth());
         return true;
     }
 

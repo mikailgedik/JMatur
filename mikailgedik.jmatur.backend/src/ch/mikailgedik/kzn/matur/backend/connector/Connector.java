@@ -314,11 +314,11 @@ public class Connector {
 
             long maxWaitingTime =settingsManager.getI(Constants.CALCULATION_MAX_WAITING_TIME_THREADS);
             calculatorMandelbrot.calculate(cl, dataSet, maxWaitingTime);
+            dataSet.addClusters(cl);
 
             calcTime = (System.currentTimeMillis() - t);
             t = System.currentTimeMillis();
 
-            dataSet.addClusters(cl);
 
             int frameRate = getSettingI(Constants.RENDER_FRAMES_PER_SECOND);
             int h = getImagePixelHeight();
