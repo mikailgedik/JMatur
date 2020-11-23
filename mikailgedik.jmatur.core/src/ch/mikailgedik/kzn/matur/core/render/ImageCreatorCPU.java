@@ -31,7 +31,8 @@ public class ImageCreatorCPU extends ImageCreator {
             if(tr.getStartX() <= imageResult.getLogicalRegion().getStartX() &&
                     tr.getStartY() <= imageResult.getLogicalRegion().getStartY() &&
                     tr.getEndX() >= imageResult.getLogicalRegion().getEndX() &&
-                    tr.getEndY() >= imageResult.getLogicalRegion().getEndY()) {
+                    tr.getEndY() >= imageResult.getLogicalRegion().getEndY() &&
+                    tr.getDepth() == imageResult.getLogicalRegion().getDepth()) {
                 create = false;
                 imageResult = i;
                 break;
