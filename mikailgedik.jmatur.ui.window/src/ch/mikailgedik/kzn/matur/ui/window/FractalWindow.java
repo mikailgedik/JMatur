@@ -6,6 +6,7 @@ import ch.mikailgedik.kzn.matur.core.connector.Constants;
 import ch.mikailgedik.kzn.matur.core.connector.VideoPath;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -367,7 +368,7 @@ public class FractalWindow extends JFrame {
 
     private void exportImage(ActionEvent event) {
         submitTask(() -> {
-            File f = showFileDialog("File to save", JFileChooser.FILES_ONLY, true);
+            File f = showFileDialog("File to save", JFileChooser.FILES_ONLY, true, ".png");
             if(f != null) {
                 try {
                     askConnectorParameters(false);
@@ -567,7 +568,7 @@ public class FractalWindow extends JFrame {
             });
 
             submitTask(() -> {
-                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true);
+                File f = showFileDialog("Select output file", JFileChooser.FILES_ONLY, true, ".mp4");
                 if(f == null) {
                     return;
                 }
@@ -608,7 +609,7 @@ public class FractalWindow extends JFrame {
     }
 
     private void importAnimationPath(ActionEvent event) {
-        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, false);
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, false, ".txt");
         if(file != null) {
             try {
                 FileInputStream in = new FileInputStream(file);
@@ -621,7 +622,7 @@ public class FractalWindow extends JFrame {
     }
 
     private void exportAnimationPath(ActionEvent event) {
-        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, true);
+        File file = showFileDialog("Select file", JFileChooser.FILES_ONLY, true, ".txt");
         if(file != null) {
             try {
                 FileOutputStream out = new FileOutputStream(file);
@@ -655,7 +656,7 @@ public class FractalWindow extends JFrame {
         panel.setLayout(layout);
 
         dialog.add(panel);
-        dialog.setSize(new Dimension(400, 600));
+        dialog.setSize(new Dimension(800, 600));
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
 
@@ -688,7 +689,7 @@ public class FractalWindow extends JFrame {
         panel.setLayout(layout);
 
         dialog.add(panel);
-        dialog.setSize(new Dimension(400, 600));
+        dialog.setSize(new Dimension(800, 300));
         dialog.setLocationRelativeTo(this);
         connector.sendAvailableUnitsTo(listModel::addElement);
         dialog.setVisible(true);
@@ -809,24 +810,39 @@ public class FractalWindow extends JFrame {
     }
 
     private void fileOpen(ActionEvent actionEvent) {
-        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, false);
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, false, "");
         if(f != null) {
             connector.readData(f);
         }
     }
 
     private void fileSave(ActionEvent actionEvent) {
-        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, true);
+        File f = showFileDialog("Load from directory", JFileChooser.DIRECTORIES_ONLY, true, "");
         if(f != null) {
             connector.saveData(f);
         }
     }
 
-    private File showFileDialog(String title, int mode, boolean saveDialog) {
+    private File showFileDialog(String title, int mode, boolean saveDialog, String suffix) {
         JFileChooser dialog = new JFileChooser();
+        if(mode != JFileChooser.DIRECTORIES_ONLY) {
+            dialog.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().endsWith(suffix);
+                }
+
+                @Override
+                public String getDescription() {
+                    return suffix;
+                }
+            });
+        }
+
         dialog.setDialogTitle(title);
         dialog.setFileSelectionMode(mode);
         dialog.setMultiSelectionEnabled(false);
+
         int r;
         if(saveDialog) {
             r = dialog.showSaveDialog(this);
@@ -834,7 +850,11 @@ public class FractalWindow extends JFrame {
             r = dialog.showOpenDialog(this);
         }
         if(r == JFileChooser.APPROVE_OPTION) {
-            return dialog.getSelectedFile();
+            File f = dialog.getSelectedFile();
+            if(!f.getName().endsWith(suffix)) {
+                return new File(f.getAbsolutePath() + suffix);
+            }
+            return f;
         } else {
             return null;
         }

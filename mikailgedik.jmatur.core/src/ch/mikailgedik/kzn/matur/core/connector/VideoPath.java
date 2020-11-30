@@ -65,7 +65,7 @@ public class VideoPath implements Iterable<VideoPath.VideoPoint> {
             VideoPoint ret = new VideoPoint(new double[]{
                     p1.center[0] + d[0] * frac,
                     p1.center[1] + d[1] * frac,
-            }, p1.height + frac * (p2.height - p1.height));
+            }, p1.height * Math.pow(p2.height / p1.height, frac));
 
             frame++;
             if(frame >= frames) {

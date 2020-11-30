@@ -89,19 +89,6 @@ public abstract class DataSet {
                 getIterations(levels.get(0).getIterations(), depth, levelCalculatePrecisionAtDepth(depth), levels.get(0).getPrecision());
     }
 
-    public double[] levelCalculateStartCoordinatesOfCluster(int depth, int id) {
-        assert false: "not tested";
-        int lW = levelCalculateLogicLevelWidth(depth);
-        double p = levelCalculatePrecisionAtDepth(depth);
-        int clusterX = id % lW;
-        int clusterY = id / lW;
-
-        return new double[]{
-                region.getStartX() + clusterX * logicClusterWidth * p,
-                region.getStartY() + clusterY * logicClusterHeight * p
-        };
-    }
-
     //These methods retrieve the value from already created levels
     //Use these methods for accuracy and performance
     public double levelGetAbsoluteClusterWidthAtDepth(int depth) {
@@ -141,13 +128,18 @@ public abstract class DataSet {
 
     /** ensures the all levels with the depth up to and including the parameter exist*/
     public void ensureLevelWithDepth(int depth) {
-        assert depth > -1;
+        if(depth < 0) {
+            throw new RuntimeException("depth < 0");
+        }
         Level prev = levels.get(levels.size() - 1);
         for(int i = levels.size(); i <= depth; i++) {
             levels.add(prev = new Level(i, prev.getLogicalWidth() * clusterFactor,
                     prev.getLogicalHeight() * clusterFactor,
                     prev.getPrecision() / clusterFactor,
                     levelCalculateIterationsForDepth(i)));
+            if(Integer.MAX_VALUE / prev.getLogicalWidth() / prev.getLogicalHeight() == 0) {
+                throw new RuntimeException("Level is too deep, integer overflow");
+            }
         }
     }
 
@@ -360,10 +352,10 @@ public abstract class DataSet {
     }
 
     public static DataSet createDataSet(int logicClusterWidth, int logicClusterHeight, int startLogicLevelWidth,
-                                        int startLogicLevelHeight, int clusterFactor, double regionStartY,
+                                        int startLogicLevelHeight, int clusterFactor, double regionCenterX,
                                         double regionCenterY, double regionWidth, int iterationsForFirstLevel, IterationModel iterationModel) {
         return new DataSetMandelbrot(logicClusterWidth, logicClusterHeight, startLogicLevelWidth, startLogicLevelHeight, clusterFactor,
-                regionStartY, regionCenterY, regionWidth, iterationsForFirstLevel, iterationModel);
+                regionCenterX, regionCenterY, regionWidth, iterationsForFirstLevel, iterationModel);
     }
 
     private static class DataSetMandelbrot extends DataSet {

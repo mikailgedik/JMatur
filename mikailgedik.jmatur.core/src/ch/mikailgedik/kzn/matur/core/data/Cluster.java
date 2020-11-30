@@ -14,7 +14,9 @@ public class Cluster implements Serializable {
         this.value = value;
         this.depth = depth;
         this.iterations = iterations;
-        assert id >= 0: id;
+        if(id < 0) {
+            throw new RuntimeException("id < 0");
+        }
         this.id = id;
     }
 

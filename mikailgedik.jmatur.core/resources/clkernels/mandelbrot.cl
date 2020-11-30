@@ -11,32 +11,28 @@ int calc(double x, double y, int maxIter, __global int* abort);
 #ifdef JULIA_SET
     int calc(double x, double y, int maxIter, __global int* abort) {
         double a = x, b = y, ta, tb;
-        for(int i = 0; i < maxIter; i++) {
+        int i = 0;
+        for(;i < maxIter  & !(a * a + b * b > 4 | *abort); i++) {
             ta = a*a - b*b + JULIA_SET_C_REAL;
             tb = 2 * a * b + JULIA_SET_C_IMAG;
             a = ta;
             b = tb;
-            if(a * a + b * b > 4 || *abort) {
-                return i;
-            }
         }
-    return -1;
+        return i == maxIter ? -1 : i;
     }
 #endif
 
 #ifndef JULIA_SET
     int calc(double x, double y, int maxIter, __global int* abort) {
         double a = 0, b = 0, ta, tb;
-        for(int i = 0; i < maxIter; i++) {
+        int i = 0;
+        for(;i < maxIter  & !(a * a + b * b > 4 | *abort); i++) {
             ta = a*a - b*b + x;
             tb = 2 * a * b + y;
             a = ta;
             b = tb;
-            if(a * a + b * b > 4 || *abort) {
-                return i;
-            }
         }
-        return -1;
+        return i == maxIter ? -1 : i;
     }
 #endif
 
